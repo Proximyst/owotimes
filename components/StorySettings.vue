@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { KICKER_IDEAS, BYLINE_IDEAS, CAPTION_IDEAS, randomFrom } from "../src/pools.ts";
 import type { Story, StoryChanges } from "../src/edition.ts";
+import { generateText } from "../src/ai.ts";
+import { useAiSettings } from "../composables/useAiSettings.ts";
 
 const props = defineProps<{
   story: Story;
@@ -20,6 +22,17 @@ function onFile(event: Event) {
   if (file) emit("photo", file);
   input.value = "";
 }
+
+const { ready: aiReady, settings: aiSettings } = useAiSettings();
+
+// Context for AI text: the story's headline and paragraphs.
+function storyContext(): string {
+  return [props.story.headline, ...props.story.paragraphs.map((paragraph) => paragraph.text)].join("\n\n");
+}
+
+function aiTask(field: string, current: string) {
+  return () => generateText(aiSettings, { field, current, context: storyContext() });
+}
 </script>
 
 <template>
@@ -36,6 +49,12 @@ function onFile(event: Event) {
         :label="`Random label for story ${index + 1}`"
         @roll="emit('update', { kicker: randomFrom(KICKER_IDEAS, story.kicker) })"
       />
+      <AiButton
+        v-if="aiReady"
+        :label="`AI label for story ${index + 1}`"
+        :task="aiTask('Label above headline', story.kicker)"
+        @result="(text) => emit('update', { kicker: text })"
+      />
     </div>
 
     <label :for="`byline-${story.id}`">Byline</label>
@@ -49,6 +68,12 @@ function onFile(event: Event) {
       <DiceButton
         :label="`Random byline for story ${index + 1}`"
         @roll="emit('update', { byline: randomFrom(BYLINE_IDEAS, story.byline) })"
+      />
+      <AiButton
+        v-if="aiReady"
+        :label="`AI byline for story ${index + 1}`"
+        :task="aiTask('Byline', story.byline)"
+        @result="(text) => emit('update', { byline: text })"
       />
     </div>
 
@@ -64,7 +89,22 @@ function onFile(event: Event) {
         :label="`Random caption for story ${index + 1}`"
         @roll="emit('update', { caption: randomFrom(CAPTION_IDEAS, story.caption) })"
       />
+      <AiButton
+        v-if="aiReady"
+        :label="`AI caption for story ${index + 1}`"
+        :task="aiTask('Photo caption', story.caption)"
+        @result="(text) => emit('update', { caption: text })"
+      />
     </div>
+
+    <label v-if="index > 0" class="check-row">
+      <input
+        type="checkbox"
+        :checked="story.startsPage"
+        @change="emit('update', { startsPage: ($event.target as HTMLInputElement).checked })"
+      >
+      Start on a new page
+    </label>
 
     <label :for="`span-${story.id}`">Width</label>
     <select

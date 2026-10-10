@@ -13,8 +13,11 @@ import {
 } from "../src/layout.ts";
 import { CRUMPLE_METHODS, PAPER_COLOURS, type CrumpleMethod } from "../src/paper.ts";
 import { PRICE_IDEAS, TAGLINE_IDEAS, TOP_RIGHT_IDEAS, randomFrom } from "../src/pools.ts";
+import { generateText } from "../src/ai.ts";
+import { useAiSettings } from "../composables/useAiSettings.ts";
 
 const props = defineProps<{ edition: Edition }>();
+const { settings: aiSettings, ready: aiReady, update: updateAi } = useAiSettings();
 
 const emit = defineEmits<{
   publication: [changes: Partial<Pick<Edition, "name" | "paperColor" | "date">>];
@@ -41,6 +44,14 @@ const textFields: TextField[] = [
 function rollText(field: TextField) {
   if (!field.pool) return;
   emit("text", { [field.key]: randomFrom(field.pool, props.edition.text[field.key]) });
+}
+
+function aiTask(field: TextField) {
+  return () => generateText(aiSettings, {
+    field: field.label,
+    current: props.edition.text[field.key],
+    context: `Newspaper: ${props.edition.name}, dated ${props.edition.date}`,
+  });
 }
 
 type FontField = "mastheadFont" | "headlineFont" | "bodyFont";
@@ -108,8 +119,68 @@ const fontFields: { key: FontField; label: string }[] = [
             :label="`Random ${field.label.toLowerCase()}`"
             @roll="rollText(field)"
           />
+          <AiButton
+            v-if="field.pool && aiReady"
+            :label="`AI ${field.label.toLowerCase()}`"
+            :task="aiTask(field)"
+            @result="(text) => emit('text', { [field.key]: text })"
+          />
         </div>
       </template>
+    </fieldset>
+
+    <fieldset>
+      <legend>AI text (bring your own key)</legend>
+      <label class="check-row">
+        <input
+          type="checkbox"
+          :checked="aiSettings.enabled"
+          @change="updateAi({ enabled: ($event.target as HTMLInputElement).checked })"
+        >
+        Show AI buttons next to the randomize buttons
+      </label>
+      <label for="ai-base-url">API endpoint</label>
+      <input
+        id="ai-base-url"
+        type="url"
+        :value="aiSettings.baseUrl"
+        placeholder="https://api.openai.com/v1"
+        @input="updateAi({ baseUrl: ($event.target as HTMLInputElement).value })"
+      >
+      <label for="ai-model">Model</label>
+      <input
+        id="ai-model"
+        type="text"
+        :value="aiSettings.model"
+        placeholder="e.g. gpt-4o-mini"
+        @input="updateAi({ model: ($event.target as HTMLInputElement).value })"
+      >
+      <label for="ai-key">API key</label>
+      <input
+        id="ai-key"
+        type="password"
+        autocomplete="off"
+        :value="aiSettings.apiKey"
+        @input="updateAi({ apiKey: ($event.target as HTMLInputElement).value })"
+      >
+      <label for="ai-temperature">Temperature (0 steady, 2 wild)</label>
+      <input
+        id="ai-temperature"
+        type="number"
+        min="0"
+        max="2"
+        step="0.1"
+        :value="aiSettings.temperature"
+        @input="updateAi({ temperature: Number(($event.target as HTMLInputElement).value) })"
+      >
+      <label for="ai-instructions">Extra instructions for the model</label>
+      <textarea
+        id="ai-instructions"
+        rows="3"
+        :value="aiSettings.instructions"
+        @input="updateAi({ instructions: ($event.target as HTMLTextAreaElement).value })"
+      />
+      <p class="field-hint">Settings stay in this browser and the key is sent only to the endpoint above. AI buttons appear once AI is on and a model and key are set.</p>
     </fieldset>
 
     <fieldset>

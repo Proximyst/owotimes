@@ -12,6 +12,15 @@ localStorage, photos in IndexedDB. No data leaves the browser.
   above the headline, the byline, the photo caption, the width, and the photo.
   Dice buttons next to the top left, top right, and tagline fields in Configure, and
   next to the label, byline, and caption in Story settings, pick a different text from a pool.
+- **Pages:** a story can start a new page from Story settings. Each page is one sheet
+  of the chosen paper size. The masthead is on page 1 and later pages get a running
+  head with the page number. A page that is too long is flagged in the preview, because
+  anything past its bottom is cut off.
+- **AI text (bring your own key):** Configure has an AI text section with the API
+  endpoint, model, key, temperature, and extra instructions. Once AI is switched on and
+  a model and key are set, an AI button appears next to each dice button. The settings
+  are stored only in this browser, and the page calls the endpoint directly, so the endpoint
+  must allow browser (CORS) requests. The key is visible to anyone using this browser.
 - **Drag and drop:** drag the ⋮⋮ handle on a story to reorder stories. Drag the
   handle on a paragraph to move it within a story, or onto another story. Drop on
   a paragraph to insert before it; drop on a story to append.
@@ -58,5 +67,7 @@ The deployable output is static files only. Bun and Node are not needed at runti
 
 Use the Print button above the preview, or the browser's print command. The page
 size is set from the chosen paper size, including custom sizes. Print styles hide
-the editor and render the newspaper on a white background. Use the browser's
-"Save as PDF" destination to keep a PDF copy.
+the editor and print each page as one sheet in its paper colour. Use the browser's
+"Save as PDF" destination to keep a PDF copy. Browsers normally leave out their title,
+address, and page-number header and footer because the page margin is zero; if yours
+still shows them, turn off "Headers and footers" in the print dialog.

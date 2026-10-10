@@ -30,6 +30,29 @@ export function createEditionStorage(storage: KeyValueStorage | undefined = glob
   };
 }
 
+const AI_SETTINGS_KEY = "owo-times-ai-v1";
+
+export function createAiSettingsStorage(storage: KeyValueStorage | undefined = globalThis.localStorage) {
+  return {
+    load(): unknown {
+      try {
+        const value = storage?.getItem(AI_SETTINGS_KEY);
+        return value ? JSON.parse(value) : null;
+      } catch {
+        return null;
+      }
+    },
+    save(settings: unknown): boolean {
+      try {
+        storage?.setItem(AI_SETTINGS_KEY, JSON.stringify(settings));
+        return true;
+      } catch {
+        return false;
+      }
+    },
+  };
+}
+
 function openPhotoDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     if (!globalThis.indexedDB) return reject(new Error("IndexedDB is not available"));

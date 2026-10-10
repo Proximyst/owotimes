@@ -63,7 +63,7 @@ describe("edition state", () => {
     });
 
     expect(edition.stories[0].kicker).toBe("Front page");
-    expect(KICKER_IDEAS).toContain(edition.stories[1].kicker);
+    expect(KICKER_IDEAS as readonly string[]).toContain(edition.stories[1].kicker);
   });
 
   test("keeps captions per story and gives stories without one a caption from the pool", () => {
@@ -75,7 +75,15 @@ describe("edition state", () => {
     });
 
     expect(edition.stories[0].caption).toBe("Harbour at dawn");
-    expect(CAPTION_IDEAS).toContain(edition.stories[1].caption);
+    expect(CAPTION_IDEAS as readonly string[]).toContain(edition.stories[1].caption);
+  });
+
+  test("keeps the new-page flag per story and defaults it off", () => {
+    const edition = normalizeEdition({
+      stories: [{ id: "a", headline: "A", startsPage: true }, { id: "b", headline: "B" }],
+    });
+
+    expect(edition.stories.map((story) => story.startsPage)).toEqual([true, false]);
   });
 
   test("migrates a legacy body string into paragraphs split on blank lines", () => {

@@ -18,8 +18,9 @@ describe("newspaper view model", () => {
           kicker: "Front page",
           byline: "By the librarian",
           span: "full" as const,
+          startsPage: false,
         },
-        { id: "two", headline: "Second", paragraphs: [], imageKey: null, caption: "", kicker: "Kicker two", byline: "By two", span: "column" as const },
+        { id: "two", headline: "Second", paragraphs: [], imageKey: null, caption: "", kicker: "Kicker two", byline: "By two", span: "column" as const, startsPage: false },
       ],
     };
     const view = buildNewspaperView(edition, new Map([["photo-1", "blob:photo"]]));
@@ -28,7 +29,7 @@ describe("newspaper view model", () => {
     expect(view.date).toBe("1890-10-10");
     expect(view.paperColor).toBe(edition.paperColor);
     expect(view.text).toEqual(edition.text);
-    expect(view.stories[0]).toEqual({
+    expect(view.pages[0].stories[0]).toEqual({
       id: "one",
       isLead: true,
       isFull: true,
@@ -39,15 +40,15 @@ describe("newspaper view model", () => {
       kicker: "Front page",
       byline: "By the librarian",
     });
-    expect(view.stories[1].isLead).toBe(false);
-    expect(view.stories[1].isFull).toBe(false);
+    expect(view.pages[0].stories[1].isLead).toBe(false);
+    expect(view.pages[0].stories[1].isFull).toBe(false);
   });
 
   test("drops blank paragraphs and falls back to a placeholder when none remain", () => {
     const edition = createDefaultEdition();
     edition.stories[0].headline = "";
     edition.stories[0].paragraphs = [{ id: "a", text: "   " }];
-    const [story] = buildNewspaperView(edition).stories;
+    const [story] = buildNewspaperView(edition).pages[0].stories;
 
     expect(story.headline).toBe(UNTITLED_HEADLINE);
     expect(story.paragraphs).toEqual([EMPTY_BODY]);
@@ -57,8 +58,8 @@ describe("newspaper view model", () => {
     const edition = createDefaultEdition();
     edition.stories[0].imageKey = "missing";
 
-    expect(buildNewspaperView(edition, new Map()).stories[0].imageUrl).toBeNull();
-    expect(buildNewspaperView(createDefaultEdition()).stories[0].imageUrl).toBeNull();
+    expect(buildNewspaperView(edition, new Map()).pages[0].stories[0].imageUrl).toBeNull();
+    expect(buildNewspaperView(createDefaultEdition()).pages[0].stories[0].imageUrl).toBeNull();
   });
 
   test("resolves layout into CSS-ready values", () => {
@@ -77,12 +78,25 @@ describe("newspaper view model", () => {
     const edition = {
       ...createDefaultEdition(),
       stories: [
-        { id: "a", headline: "A", paragraphs: [], imageKey: "photo-1", caption: "Tea caption", kicker: "Kicker A", byline: "By A", span: "column" as const },
-        { id: "b", headline: "B", paragraphs: [], imageKey: "photo-2", caption: "Second caption", kicker: "Kicker B", byline: "By B", span: "column" as const },
+        { id: "a", headline: "A", paragraphs: [], imageKey: "photo-1", caption: "Tea caption", kicker: "Kicker A", byline: "By A", span: "column" as const, startsPage: false },
+        { id: "b", headline: "B", paragraphs: [], imageKey: "photo-2", caption: "Second caption", kicker: "Kicker B", byline: "By B", span: "column" as const, startsPage: false },
       ],
     };
     const view = buildNewspaperView(edition, new Map([["photo-1", "blob:one"], ["photo-2", "blob:two"]]));
 
-    expect(view.stories.map((story) => story.caption)).toEqual(["Tea caption", "Second caption"]);
+    expect(view.pages[0].stories.map((story) => story.caption)).toEqual(["Tea caption", "Second caption"]);
+  });
+
+  test("starts a new page where a story asks for one", () => {
+    const edition = createDefaultEdition();
+    edition.stories = [
+      { ...edition.stories[0], id: "a" },
+      { ...edition.stories[0], id: "b", startsPage: true },
+      { ...edition.stories[0], id: "c" },
+    ];
+    const { pages } = buildNewspaperView(edition);
+
+    expect(pages.map((page) => page.number)).toEqual([1, 2]);
+    expect(pages.map((page) => page.stories.map((story) => story.id))).toEqual([["a"], ["b", "c"]]);
   });
 });

@@ -25,13 +25,18 @@ export interface LayoutView {
   crumpleImage: string;
 }
 
+export interface PageView {
+  number: number;
+  stories: StoryView[];
+}
+
 export interface NewspaperView {
   name: string;
   date: string;
   paperColor: string;
   text: EditionText;
   layout: LayoutView;
-  stories: StoryView[];
+  pages: PageView[];
 }
 
 export const UNTITLED_HEADLINE = "Untitled story";
@@ -52,25 +57,34 @@ function buildLayoutView(layout: Layout): LayoutView {
 }
 
 export function buildNewspaperView(edition: Edition, imageUrls: ReadonlyMap<string, string> = new Map()): NewspaperView {
+  const stories = edition.stories.map((story, index): StoryView => {
+    const paragraphs = story.paragraphs.map((paragraph) => paragraph.text).filter((text) => text.trim() !== "");
+    return {
+      id: story.id,
+      isLead: index === 0,
+      isFull: story.span === "full",
+      headline: story.headline || UNTITLED_HEADLINE,
+      paragraphs: paragraphs.length ? paragraphs : [EMPTY_BODY],
+      imageUrl: story.imageKey ? imageUrls.get(story.imageKey) ?? null : null,
+      caption: story.caption,
+      kicker: story.kicker,
+      byline: story.byline,
+    };
+  });
+
+  // A story starts a new page when it asks to; the first story always opens page 1.
+  const pages: PageView[] = [];
+  stories.forEach((story, index) => {
+    if (index === 0 || edition.stories[index].startsPage) pages.push({ number: pages.length + 1, stories: [] });
+    pages[pages.length - 1].stories.push(story);
+  });
+
   return {
     name: edition.name,
     date: edition.date,
     paperColor: edition.paperColor,
     text: edition.text,
     layout: buildLayoutView(edition.layout),
-    stories: edition.stories.map((story, index) => {
-      const paragraphs = story.paragraphs.map((paragraph) => paragraph.text).filter((text) => text.trim() !== "");
-      return {
-        id: story.id,
-        isLead: index === 0,
-        isFull: story.span === "full",
-        headline: story.headline || UNTITLED_HEADLINE,
-        paragraphs: paragraphs.length ? paragraphs : [EMPTY_BODY],
-        imageUrl: story.imageKey ? imageUrls.get(story.imageKey) ?? null : null,
-        caption: story.caption,
-        kicker: story.kicker,
-        byline: story.byline,
-      };
-    }),
+    pages,
   };
 }

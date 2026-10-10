@@ -18,9 +18,10 @@ export interface Story {
   kicker: string;
   byline: string;
   span: StorySpan;
+  startsPage: boolean;
 }
 
-export type StoryChanges = Partial<Pick<Story, "headline" | "imageKey" | "span" | "caption" | "kicker" | "byline">>;
+export type StoryChanges = Partial<Pick<Story, "headline" | "imageKey" | "span" | "caption" | "kicker" | "byline" | "startsPage">>;
 
 export interface EditionText {
   topLeft: string;
@@ -74,7 +75,7 @@ function textOr(value: unknown, fallback: string): string {
 const LEAD_KICKER = "FRONT PAGE SCOOP";
 
 function blankStory(): Story {
-  return { id: makeId(), headline: "", paragraphs: [], imageKey: null, caption: randomFrom(CAPTION_IDEAS), kicker: randomFrom(KICKER_IDEAS), byline: randomFrom(BYLINE_IDEAS), span: "column" };
+  return { id: makeId(), headline: "", paragraphs: [], imageKey: null, caption: randomFrom(CAPTION_IDEAS), kicker: randomFrom(KICKER_IDEAS), byline: randomFrom(BYLINE_IDEAS), span: "column", startsPage: false };
 }
 
 export function createDefaultEdition(): Edition {
@@ -97,6 +98,7 @@ export function createDefaultEdition(): Edition {
         kicker: LEAD_KICKER,
         byline: randomFrom(BYLINE_IDEAS),
         span: "column",
+        startsPage: false,
       },
     ],
   };
@@ -130,6 +132,7 @@ function normalizeStory(story: Record<string, unknown>): Story {
     kicker: textOr(story.kicker, KICKER_IDEAS[0]),
     byline: textOr(story.byline, BYLINE_IDEAS[0]),
     span: story.span === "full" ? "full" : "column",
+    startsPage: story.startsPage === true,
   };
 }
 

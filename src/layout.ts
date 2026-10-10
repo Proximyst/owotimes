@@ -120,5 +120,5 @@ export function fontStack(family: string): string {
 }
 
 export function pageSizeCss(dimensions: PaperDimensions): string {
-  return `@page { size: ${dimensions.widthMm}mm ${dimensions.heightMm}mm; margin: 12mm; }`;
+  return `@page { size: ${dimensions.widthMm}mm ${dimensions.heightMm}mm; margin: 0; }`;
 }

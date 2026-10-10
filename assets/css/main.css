@@ -284,7 +284,9 @@ textarea:focus-visible {
   --body-size: 11pt;
   position: relative;
   width: min(100%, var(--paper-width));
-  min-height: var(--paper-height);
+  height: var(--paper-height);
+  box-sizing: border-box;
+  overflow: hidden;
   margin: 0 auto;
   padding: 2rem 2.25rem 1.5rem;
   background-color: var(--paper-tone);
@@ -298,6 +300,34 @@ textarea:focus-visible {
   box-shadow: 0 2px 10px rgb(0 0 0 / 0.25), inset 0 0 60px rgb(90 60 30 / 0.18);
   color: var(--ink);
   font-family: var(--font-body);
+}
+
+.newspaper-pages {
+  display: grid;
+  justify-items: center;
+  gap: 2rem;
+}
+
+.sheet-wrap {
+  display: grid;
+  gap: 0.5rem;
+  width: min(100%, var(--paper-width));
+}
+
+.paper-running-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.75rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.overflow-warning {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--accent);
 }
 
 .paper-masthead {
@@ -441,8 +471,13 @@ textarea:focus-visible {
   }
 }
 
-/* Print: only the newspaper, ink on white. @page size comes from the layout. */
+/* Print: one sheet per page, paper colour kept, no browser header/footer (zero @page margin). */
 @media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
   body {
     background: #fff;
   }
@@ -458,13 +493,22 @@ textarea:focus-visible {
   }
 
   .newspaper {
-    width: 100%;
+    width: var(--paper-width);
+    height: var(--paper-height);
     min-height: 0;
-    background: #fff;
-    background-image: none;
+    margin: 0;
+    padding: 12mm;
+    box-sizing: border-box;
+    overflow: hidden;
+    background-color: var(--paper-tone);
+    background-image: var(--paper-crumple);
     box-shadow: none;
     color: #000;
-    padding: 0;
+    break-after: page;
+  }
+
+  .sheet-wrap:last-child .newspaper {
+    break-after: auto;
   }
 
   .paper-columns {
