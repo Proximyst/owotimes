@@ -500,10 +500,10 @@ textarea:focus-visible {
     padding: 12mm;
     box-sizing: border-box;
     overflow: hidden;
-    background-color: var(--paper-tone);
-    background-image: var(--paper-crumple);
-    box-shadow: none;
+    box-shadow: inset 0 0 60px rgb(90 60 30 / 0.18);
     color: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     break-after: page;
   }
 
