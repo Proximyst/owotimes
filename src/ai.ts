@@ -21,6 +21,20 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   instructions: "",
 };
 
+// One-click endpoint and model choices. The reader still supplies their own key.
+export interface AiProviderPreset {
+  id: string;
+  label: string;
+  baseUrl: string;
+  model: string;
+}
+
+export const AI_PROVIDER_PRESETS: readonly AiProviderPreset[] = [
+  { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4o-mini" },
+  { id: "anthropic", label: "Anthropic", baseUrl: "https://api.anthropic.com/v1/", model: "claude-sonnet-4-6" },
+];
+
 export const TEMPERATURE_RANGE = { min: 0, max: 2 } as const;
 const TEXT_MAX_LENGTH = 500;
 const INSTRUCTIONS_MAX_LENGTH = 1000;
@@ -89,11 +103,16 @@ export function buildAiMessages(settings: AiSettings, request: AiTextRequest): C
 }
 
 export async function generateText(settings: AiSettings, request: AiTextRequest): Promise<string> {
+  const baseUrl = settings.baseUrl.trim();
   const client = new OpenAI({
     apiKey: settings.apiKey.trim(),
-    baseURL: settings.baseUrl.trim(),
+    baseURL: baseUrl,
     // The key belongs to the reader and the page calls the endpoint directly; there is no server.
     dangerouslyAllowBrowser: true,
+    // Anthropic refuses direct browser requests unless this opt-in header is sent.
+    defaultHeaders: new URL(baseUrl).hostname === "api.anthropic.com"
+      ? { "anthropic-dangerous-direct-browser-access": "true" }
+      : undefined,
   });
   const response = await client.chat.completions.create({
     model: settings.model.trim(),

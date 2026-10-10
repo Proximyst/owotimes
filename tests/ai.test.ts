@@ -1,5 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_AI_SETTINGS, buildAiMessages, isAiReady, normalizeAiSettings, type AiSettings } from "../src/ai.ts";
+import {
+  AI_PROVIDER_PRESETS,
+  DEFAULT_AI_SETTINGS,
+  buildAiMessages,
+  isAiReady,
+  isValidBaseUrl,
+  normalizeAiSettings,
+  type AiSettings,
+} from "../src/ai.ts";
 import { createAiSettingsStorage } from "../src/storage.ts";
 
 const READY: AiSettings = { ...DEFAULT_AI_SETTINGS, enabled: true, model: "model-x", apiKey: "sk-test" };
@@ -19,6 +27,13 @@ describe("AI settings", () => {
     expect(isAiReady({ ...READY, apiKey: "   " })).toBe(false);
     expect(isAiReady({ ...READY, model: "" })).toBe(false);
     expect(isAiReady({ ...READY, baseUrl: "not a url" })).toBe(false);
+  });
+
+  test("each provider preset gives a usable endpoint and model, so only the key is left to enter", () => {
+    for (const preset of AI_PROVIDER_PRESETS) {
+      expect(isValidBaseUrl(preset.baseUrl)).toBe(true);
+      expect(isAiReady({ ...READY, baseUrl: preset.baseUrl, model: preset.model })).toBe(true);
+    }
   });
 
   test("puts the field, context, current text, and instructions into the prompt", () => {

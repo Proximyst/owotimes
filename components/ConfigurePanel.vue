@@ -13,7 +13,7 @@ import {
 } from "../src/layout.ts";
 import { CRUMPLE_METHODS, PAPER_COLOURS, type CrumpleMethod } from "../src/paper.ts";
 import { PRICE_IDEAS, TAGLINE_IDEAS, TOP_RIGHT_IDEAS, randomFrom } from "../src/pools.ts";
-import { generateText } from "../src/ai.ts";
+import { AI_PROVIDER_PRESETS, generateText } from "../src/ai.ts";
 import { useAiSettings } from "../composables/useAiSettings.ts";
 
 const props = defineProps<{ edition: Edition }>();
@@ -131,6 +131,18 @@ const fontFields: { key: FontField; label: string }[] = [
 
     <fieldset>
       <legend>AI text (bring your own key)</legend>
+      <div class="button-row">
+        <button
+          v-for="preset in AI_PROVIDER_PRESETS"
+          :key="preset.id"
+          type="button"
+          :class="{ 'is-selected': aiSettings.baseUrl === preset.baseUrl }"
+          @click="updateAi({ baseUrl: preset.baseUrl, model: preset.model })"
+        >
+          {{ preset.label }}
+        </button>
+      </div>
+      <p class="field-hint">A preset fills the endpoint and a default model. Enter your own key, and change the model if you want another.</p>
       <label class="check-row">
         <input
           type="checkbox"
