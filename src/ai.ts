@@ -31,7 +31,7 @@ export interface AiProviderPreset {
 
 export const AI_PROVIDER_PRESETS: readonly AiProviderPreset[] = [
   { id: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
-  { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "openai/gpt-4o-mini" },
+  { id: "openrouter", label: "OpenRouter", baseUrl: "https://openrouter.ai/api/v1", model: "z-ai/glm-5.3-flash" },
   { id: "anthropic", label: "Anthropic", baseUrl: "https://api.anthropic.com/v1/", model: "claude-sonnet-4-6" },
 ];
 
