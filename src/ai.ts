@@ -18,7 +18,7 @@ export const DEFAULT_AI_SETTINGS: AiSettings = {
   model: "",
   apiKey: "",
   temperature: 1,
-  instructions: "",
+  instructions: "This newspaper is for a Minecraft server called 'OwO SMP', which is filled with adults. Keep the tone playful and affectionate toward the server, and refer to Minecraft life, builds, and server events where it fits.",
 };
 
 // One-click endpoint and model choices. The reader still supplies their own key.
