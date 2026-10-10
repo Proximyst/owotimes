@@ -7,23 +7,23 @@ localStorage, photos in IndexedDB. No data leaves the browser.
 ## Editing
 
 - **Stories:** each story has a headline, a width (single column or full width),
-  and any number of paragraphs (with **bold** and *italic*).
+  and story text in one box; blank lines start a new paragraph (with **bold** and *italic*).
 - **Story settings:** the Story settings button opens a wide dialog with the label
   above the headline, the byline, the photo caption, the width, and the photo.
   Dice buttons next to the top left, top right, and tagline fields in Configure, and
   next to the label, byline, and caption in Story settings, pick a different text from a pool.
 - **Pages:** a story can start a new page from Story settings. Each page is one sheet
   of the chosen paper size. The masthead is on page 1 and later pages get a running
-  head with the page number. A page that is too long is flagged in the preview, because
-  anything past its bottom is cut off.
+  head with the page number. Text that does not fit flows onto a new page automatically, even
+  in the middle of a paragraph, but never inside bold or italic text. Only text that cannot be
+  placed that way, such as a bold or italic span longer than a page, is cut off and flagged.
 - **AI text (bring your own key):** Configure has an AI text section with the API
-  endpoint, model, key, temperature, and extra instructions, with buttons that fill in OpenAI, OpenRouter, or Anthropic presets. Once AI is switched on and a model and key are set, an AI button appears next to each text field in Configure, beside each story's headline, label, byline, and caption, and on each paragraph. Each request sends all of the newspaper's text as context. The settings
+  endpoint, model, key, temperature, and extra instructions, with buttons that fill in OpenAI, OpenRouter, or Anthropic presets. Once AI is switched on and a model and key are set, an AI button appears next to each text field in Configure, beside each story's headline, label, byline, and caption, and beside the story text. Each request sends all of the newspaper's text as context. The settings
   are stored only in this browser, and the page calls the endpoint directly, so the endpoint
   must allow browser (CORS) requests. The key is visible to anyone using this browser.
-  Each paragraph also has an AI button that opens a dialog for your prompt and replaces that paragraph with the result.
-- **Drag and drop:** drag the ⋮⋮ handle on a story to reorder stories. Drag the
-  handle on a paragraph to move it within a story, or onto another story. Drop on
-  a paragraph to insert before it; drop on a story to append.
+  The story text also has an AI button that opens a dialog for your prompt and replaces the whole story text with the result.
+- **Drag and drop:** drag the ⋮⋮ handle on a story to reorder stories. Drop a story on another story to move it before that one.
+- **Stories panel size:** drag the right edge of the stories panel to widen it. It opens over the preview, so you can edit without the newspaper in view. Narrower than the preview column it leaves the preview visible. Focus the edge and press the left or right arrow keys to resize it from the keyboard. On narrow screens the panel stacks above the preview and cannot be resized.
 - **Configure:** the Configure button above the preview opens settings for the
   publication name and date line, paper tone (preset swatches or any colour), masthead,
   tagline, banner, footer, paper size, column count, body text size,
@@ -36,8 +36,7 @@ localStorage, photos in IndexedDB. No data leaves the browser.
     installed fonts and fall back to a serif if missing.
 - **Reset:** the Reset newspaper button at the bottom of Configure restores the default newspaper. All stories, photos, text, and layout are removed; AI settings are kept.
 
-Keyboard users can edit everything, but paragraphs and stories can only be
-reordered by dragging.
+Keyboard users can edit everything, but stories can only be reordered by dragging.
 
 ## Development
 
@@ -72,3 +71,7 @@ the editor and print each page as one sheet in its paper colour. Use the browser
 "Save as PDF" destination to keep a PDF copy. Browsers normally leave out their title,
 address, and page-number header and footer because the page margin is zero; if yours
 still shows them, turn off "Headers and footers" in the print dialog.
+
+## Exporting PNG
+
+PNG per page saves each sheet as its own file. Long PNG saves all sheets stacked top to bottom in one file, with a gap between sheets. Each image is rendered at 2x the paper size. A long strip is rendered at a lower resolution when needed to stay within browser canvas limits (16,384 pixels per side and 16 million pixels in total), so very long editions export at reduced resolution. Browsers may ask permission before downloading several files at once.

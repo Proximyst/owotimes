@@ -21,7 +21,7 @@ body {
 
 .app-shell {
   display: grid;
-  grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+  grid-template-columns: var(--editor-default) minmax(0, 1fr);
   gap: 1.5rem;
   padding: 1.5rem;
   min-height: 100vh;
@@ -32,10 +32,34 @@ body {
   background: #fbf7ec;
   border: 1px solid var(--rule);
   padding: 1rem 1.25rem;
-  position: sticky;
-  top: 1rem;
-  max-height: calc(100vh - 2rem);
+  position: fixed;
+  top: 1.5rem;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  width: var(--editor-width);
+  z-index: 20;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 0.2);
   overflow: auto;
+}
+
+.preview {
+  grid-column: 2;
+}
+
+.editor-resizer {
+  position: fixed;
+  top: 1.5rem;
+  bottom: 1.5rem;
+  left: calc(1.5rem + var(--editor-width) - 4px);
+  width: 8px;
+  z-index: 21;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.editor-resizer:hover,
+.editor-resizer:focus-visible {
+  background: rgb(122 31 31 / 0.2);
 }
 
 .editor-panel h2 {
@@ -112,44 +136,6 @@ body {
   cursor: grabbing;
 }
 
-.paragraph-list {
-  margin-top: 0.5rem;
-}
-
-.paragraph-row {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-areas:
-    "handle text"
-    ". remove";
-  gap: 0.25rem 0.5rem;
-  padding: 0.4rem;
-  margin-bottom: 0.5rem;
-  border: 1px dashed transparent;
-}
-
-.paragraph-row .drag-handle {
-  grid-area: handle;
-  align-self: start;
-  padding-top: 0.4rem;
-}
-
-.paragraph-row textarea {
-  grid-area: text;
-}
-
-.paragraph-row .paragraph-actions {
-  grid-area: remove;
-  justify-self: start;
-  display: flex;
-  gap: 0.25rem;
-}
-
-.paragraph-row.is-drop-target {
-  border-color: var(--accent);
-  background: #f6ead8;
-}
-
 .button-row {
   display: flex;
   flex-wrap: wrap;
@@ -194,7 +180,8 @@ textarea:focus-visible {
   align-items: center;
 }
 
-.dice-row input {
+.dice-row input,
+.dice-row textarea {
   flex: 1;
   min-width: 0;
 }
@@ -206,6 +193,24 @@ textarea:focus-visible {
   width: 2rem;
   height: 2rem;
   padding: 0;
+}
+
+.ai-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ai-status {
+  max-width: 11rem;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--muted-ink);
+}
+
+.ai-status.is-error {
+  color: var(--accent);
 }
 
 .modal {
@@ -295,6 +300,8 @@ textarea:focus-visible {
   --font-body: var(--serif);
   --body-size: 11pt;
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: min(100%, var(--paper-width));
   height: var(--paper-height);
   box-sizing: border-box;
@@ -380,12 +387,15 @@ textarea:focus-visible {
 .paper-columns {
   columns: var(--columns);
   column-gap: 1.75rem;
+  column-fill: auto;
   column-rule: 1px solid var(--rule);
   padding-top: 1rem;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .paper-story {
-  break-inside: avoid;
   margin: 0 0 1.25rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--rule);
@@ -423,12 +433,22 @@ textarea:focus-visible {
   color: var(--muted-ink);
 }
 
+.paper-story h2,
+.paper-story .story-kicker,
+.paper-story .story-byline {
+  break-after: avoid;
+}
+
 .story-copy {
   margin: 0.5rem 0 0;
   font-size: var(--body-size);
   text-align: justify;
   hyphens: auto;
   white-space: pre-line;
+}
+
+.story-copy + .story-copy {
+  text-indent: 1.5em;
 }
 
 .paper-figure {
@@ -470,7 +490,17 @@ textarea:focus-visible {
 
   .editor-panel {
     position: static;
+    width: auto;
     max-height: none;
+    box-shadow: none;
+  }
+
+  .preview {
+    grid-column: auto;
+  }
+
+  .editor-resizer {
+    display: none;
   }
 
   .newspaper {
@@ -525,10 +555,6 @@ textarea:focus-visible {
 
   .paper-columns {
     columns: var(--columns);
-  }
-
-  .paper-story {
-    break-inside: avoid;
   }
 
   .paper-figure img {

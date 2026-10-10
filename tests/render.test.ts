@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildNewspaperView, EMPTY_BODY, UNTITLED_HEADLINE } from "../src/render.ts";
+import { buildNewspaperView, EMPTY_BODY, paginate, splittableWord, UNTITLED_HEADLINE, unitKey } from "../src/render.ts";
 import { createDefaultEdition } from "../src/edition.ts";
 
 describe("newspaper view model", () => {
@@ -12,7 +12,7 @@ describe("newspaper view model", () => {
         {
           id: "one",
           headline: "A <great> day",
-          paragraphs: [{ id: "p", text: "Tea & crumpets" }],
+          body: "Tea & crumpets",
           imageKey: "photo-1",
           caption: "Tea caption",
           kicker: "Front page",
@@ -20,7 +20,7 @@ describe("newspaper view model", () => {
           span: "full" as const,
           startsPage: false,
         },
-        { id: "two", headline: "Second", paragraphs: [], imageKey: null, caption: "", kicker: "Kicker two", byline: "By two", span: "column" as const, startsPage: false },
+        { id: "two", headline: "Second", body: "", imageKey: null, caption: "", kicker: "Kicker two", byline: "By two", span: "column" as const, startsPage: false },
       ],
     };
     const view = buildNewspaperView(edition, new Map([["photo-1", "blob:photo"]]));
@@ -31,10 +31,12 @@ describe("newspaper view model", () => {
     expect(view.text).toEqual(edition.text);
     expect(view.pages[0].stories[0]).toEqual({
       id: "one",
+      key: "one:0:0",
       isLead: true,
       isFull: true,
+      continued: false,
       headline: "A <great> day",
-      paragraphs: ["Tea & crumpets"],
+      paragraphs: [{ index: 0, word: 0, text: "Tea & crumpets" }],
       imageUrl: "blob:photo",
       caption: "Tea caption",
       kicker: "Front page",
@@ -44,14 +46,22 @@ describe("newspaper view model", () => {
     expect(view.pages[0].stories[1].isFull).toBe(false);
   });
 
-  test("drops blank paragraphs and falls back to a placeholder when none remain", () => {
+  test("falls back to a placeholder when the story text is blank", () => {
     const edition = createDefaultEdition();
     edition.stories[0].headline = "";
-    edition.stories[0].paragraphs = [{ id: "a", text: "   " }];
+    edition.stories[0].body = "   ";
     const [story] = buildNewspaperView(edition).pages[0].stories;
 
     expect(story.headline).toBe(UNTITLED_HEADLINE);
-    expect(story.paragraphs).toEqual([EMPTY_BODY]);
+    expect(story.paragraphs.map((piece) => piece.text)).toEqual([EMPTY_BODY]);
+  });
+
+  test("splits story text into paragraphs on blank lines", () => {
+    const edition = createDefaultEdition();
+    edition.stories[0].body = "First\n\nSecond";
+    const [story] = buildNewspaperView(edition).pages[0].stories;
+
+    expect(story.paragraphs.map((piece) => piece.text)).toEqual(["First", "Second"]);
   });
 
   test("leaves imageUrl null for stories without a resolved photo", () => {
@@ -78,8 +88,8 @@ describe("newspaper view model", () => {
     const edition = {
       ...createDefaultEdition(),
       stories: [
-        { id: "a", headline: "A", paragraphs: [], imageKey: "photo-1", caption: "Tea caption", kicker: "Kicker A", byline: "By A", span: "column" as const, startsPage: false },
-        { id: "b", headline: "B", paragraphs: [], imageKey: "photo-2", caption: "Second caption", kicker: "Kicker B", byline: "By B", span: "column" as const, startsPage: false },
+        { id: "a", headline: "A", body: "", imageKey: "photo-1", caption: "Tea caption", kicker: "Kicker A", byline: "By A", span: "column" as const, startsPage: false },
+        { id: "b", headline: "B", body: "", imageKey: "photo-2", caption: "Second caption", kicker: "Kicker B", byline: "By B", span: "column" as const, startsPage: false },
       ],
     };
     const view = buildNewspaperView(edition, new Map([["photo-1", "blob:one"], ["photo-2", "blob:two"]]));
@@ -98,5 +108,41 @@ describe("newspaper view model", () => {
 
     expect(pages.map((page) => page.number)).toEqual([1, 2]);
     expect(pages.map((page) => page.stories.map((story) => story.id))).toEqual([["a"], ["b", "c"]]);
+  });
+
+  test("flows a long story onto the next page with only its remaining paragraphs", () => {
+    const edition = createDefaultEdition();
+    edition.stories[0].body = "one\n\ntwo\n\nthree";
+    const { stories } = buildNewspaperView(edition);
+    const pages = paginate(stories, new Set([unitKey(stories[0].id, 2)]));
+
+    expect(pages.map((page) => page.stories.map((story) => story.paragraphs.map((piece) => piece.text)))).toEqual([[["one", "two"]], [["three"]]]);
+    expect(pages[1].stories[0]).toMatchObject({ continued: true, isLead: false });
+  });
+
+  test("a break before a story's first paragraph does not add an empty page", () => {
+    const edition = createDefaultEdition();
+    const { stories } = buildNewspaperView(edition);
+
+    expect(paginate(stories, new Set([unitKey(stories[0].id, 0)]))).toHaveLength(1);
+  });
+
+  test("breaks a paragraph across pages at a word, and the rest continues without a header", () => {
+    const edition = createDefaultEdition();
+    edition.stories[0].body = "one two three four";
+    const { stories } = buildNewspaperView(edition);
+    const pages = paginate(stories, new Set([unitKey(stories[0].id, 0, 2)]));
+
+    expect(pages.map((page) => page.stories[0].paragraphs)).toEqual([
+      [{ index: 0, word: 0, text: "one two" }],
+      [{ index: 0, word: 2, text: "three four" }],
+    ]);
+    expect(pages[1].stories[0]).toMatchObject({ continued: true });
+  });
+
+  test("never splits a paragraph inside bold or italic markup", () => {
+    expect(splittableWord("a **bold text** end", 2)).toBe(1);
+    expect(splittableWord("one two three", 2)).toBe(2);
+    expect(splittableWord("*one two* three", 1)).toBe(0);
   });
 });

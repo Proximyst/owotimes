@@ -92,18 +92,6 @@ export function useEdition() {
     moveStory(id: string, beforeStoryId: string | null) {
       controller?.moveStory(id, beforeStoryId);
     },
-    addParagraph(storyId: string) {
-      controller?.addParagraph(storyId);
-    },
-    updateParagraph(id: string, text: string) {
-      controller?.updateParagraph(id, text);
-    },
-    removeParagraph(id: string) {
-      controller?.removeParagraph(id);
-    },
-    moveParagraph(id: string, toStoryId: string, beforeParagraphId: string | null) {
-      controller?.moveParagraph(id, toStoryId, beforeParagraphId);
-    },
     async setPhoto(id: string, file: Blob) {
       if (!file.type.startsWith("image/")) {
         photoError.value = "Choose an image file.";

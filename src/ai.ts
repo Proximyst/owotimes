@@ -104,11 +104,39 @@ export function buildAiMessages(settings: AiSettings, request: AiTextRequest): C
   ];
 }
 
-export async function generateText(settings: AiSettings, request: AiTextRequest): Promise<string> {
+// What a request is doing, reported while it runs.
+export type AiStatus =
+  | { phase: "waiting" }
+  | { phase: "retrying"; attempt: number; attempts: number; reason: string }
+  | { phase: "writing"; tokens: number };
+
+export type AiReport = (status: AiStatus) => void;
+
+export const AI_ATTEMPTS = 3;
+// Longest silence from the endpoint, before the reply starts or between streamed pieces, before an attempt is abandoned.
+const IDLE_TIMEOUT_MS = 10_000;
+const RETRY_DELAY_MS = 1_000;
+
+// A failure worth another attempt. Its message is the reason the reader sees.
+class RetryableFailure extends Error {}
+
+function isRetryableStatus(status: number | undefined): boolean {
+  return status === 408 || status === 409 || status === 429 || (status !== undefined && status >= 500);
+}
+
+function delay(ms: number): Promise<void> {
+  const { promise, resolve } = Promise.withResolvers<void>();
+  setTimeout(resolve, ms);
+  return promise;
+}
+
+export async function generateText(settings: AiSettings, request: AiTextRequest, report: AiReport = () => {}): Promise<string> {
   const baseUrl = settings.baseUrl.trim();
   const client = new OpenAI({
     apiKey: settings.apiKey.trim(),
     baseURL: baseUrl,
+    // Retries happen below, so that each attempt can be reported to the reader.
+    maxRetries: 0,
     // The key belongs to the reader and the page calls the endpoint directly; there is no server.
     dangerouslyAllowBrowser: true,
     // Anthropic refuses direct browser requests unless this opt-in header is sent.
@@ -116,12 +144,69 @@ export async function generateText(settings: AiSettings, request: AiTextRequest)
       ? { "anthropic-dangerous-direct-browser-access": "true" }
       : undefined,
   });
-  const response = await client.chat.completions.create({
-    model: settings.model.trim(),
-    temperature: settings.temperature,
-    messages: buildAiMessages(settings, request),
-  });
-  const text = response.choices[0]?.message?.content?.trim().replace(/^["“]|["”]$/g, "").trim() ?? "";
-  if (!text) throw new Error("The model returned no text.");
-  return text;
+
+  let failure: RetryableFailure | null = null;
+  for (let attempt = 1; attempt <= AI_ATTEMPTS; attempt++) {
+    if (failure) {
+      report({ phase: "retrying", attempt, attempts: AI_ATTEMPTS, reason: failure.message });
+      await delay(RETRY_DELAY_MS);
+    } else {
+      report({ phase: "waiting" });
+    }
+    try {
+      return await streamReply(client, settings, request, report);
+    } catch (error) {
+      if (!(error instanceof RetryableFailure)) throw error;
+      failure = error;
+    }
+  }
+  throw new Error(`Gave up after ${AI_ATTEMPTS} attempts: ${failure?.message ?? "the request failed"}.`);
+}
+
+// One attempt. It is abandoned when the endpoint goes quiet for IDLE_TIMEOUT_MS, whether it has not
+// replied yet or stops partway through the reply.
+async function streamReply(client: OpenAI, settings: AiSettings, request: AiTextRequest, report: AiReport): Promise<string> {
+  const controller = new AbortController();
+  let silent = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const watch = () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      silent = true;
+      controller.abort();
+    }, IDLE_TIMEOUT_MS);
+  };
+
+  let text = "";
+  let tokens = 0;
+  watch();
+  try {
+    const stream = await client.chat.completions.create({
+      model: settings.model.trim(),
+      temperature: settings.temperature,
+      messages: buildAiMessages(settings, request),
+      stream: true,
+    }, { signal: controller.signal });
+    for await (const chunk of stream) {
+      watch();
+      const piece = chunk.choices[0]?.delta?.content;
+      if (!piece) continue;
+      text += piece;
+      tokens += 1;
+      report({ phase: "writing", tokens });
+    }
+  } catch (error) {
+    if (silent) throw new RetryableFailure(`no reply for ${IDLE_TIMEOUT_MS / 1000} seconds`);
+    if (error instanceof OpenAI.APIConnectionError) throw new RetryableFailure("connection failed");
+    if (error instanceof OpenAI.APIError && isRetryableStatus(error.status)) {
+      throw new RetryableFailure(`HTTP ${error.status}`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const reply = text.trim().replace(/^["“]|["”]$/g, "").trim();
+  if (!reply) throw new Error("The model returned no text.");
+  return reply;
 }

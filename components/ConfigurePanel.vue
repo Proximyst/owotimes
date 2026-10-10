@@ -13,7 +13,7 @@ import {
 } from "../src/layout.ts";
 import { CRUMPLE_METHODS, PAPER_COLOURS, type CrumpleMethod } from "../src/paper.ts";
 import { PRICE_IDEAS, TAGLINE_IDEAS, TOP_RIGHT_IDEAS, randomFrom } from "../src/pools.ts";
-import { AI_PROVIDER_PRESETS, generateText } from "../src/ai.ts";
+import { AI_PROVIDER_PRESETS, generateText, type AiReport } from "../src/ai.ts";
 import { useAiSettings } from "../composables/useAiSettings.ts";
 import { editionContext } from "../src/edition.ts";
 
@@ -54,11 +54,11 @@ function resetEdition() {
 }
 
 function aiTask(field: TextField) {
-  return () => generateText(aiSettings, {
+  return (report: AiReport) => generateText(aiSettings, {
     field: field.label,
     current: props.edition.text[field.key],
     context: editionContext(props.edition),
-  });
+  }, report);
 }
 
 type FontField = "mastheadFont" | "headlineFont" | "bodyFont";

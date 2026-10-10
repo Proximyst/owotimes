@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { KICKER_IDEAS, BYLINE_IDEAS, CAPTION_IDEAS, randomFrom } from "../src/pools.ts";
 import type { Story, StoryChanges } from "../src/edition.ts";
-import { generateText } from "../src/ai.ts";
+import { generateText, type AiReport } from "../src/ai.ts";
 import { useAiSettings } from "../composables/useAiSettings.ts";
 
 const props = defineProps<{
@@ -27,7 +27,7 @@ function onFile(event: Event) {
 const { ready: aiReady, settings: aiSettings } = useAiSettings();
 
 function aiTask(field: string, current: string) {
-  return () => generateText(aiSettings, { field, current, context: props.context });
+  return (report: AiReport) => generateText(aiSettings, { field, current, context: props.context }, report);
 }
 </script>
 

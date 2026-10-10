@@ -12,7 +12,7 @@ const edition: Edition = {
     {
       id: "s1",
       headline: "HEADLINE ONE",
-      paragraphs: [{ id: "p1", text: "PARAGRAPH ONE" }],
+      body: "PARAGRAPH ONE",
       imageKey: null,
       caption: "CAPTION ONE",
       kicker: "KICKER ONE",

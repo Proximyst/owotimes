@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   addStory,
   createDefaultEdition,
-  moveParagraph,
+  storyParagraphs,
   moveStory,
   normalizeEdition,
   removeStory,
@@ -13,8 +13,6 @@ import {
 import { createEditionStorage } from "../src/storage.ts";
 import { CAPTION_IDEAS, KICKER_IDEAS } from "../src/pools.ts";
 
-const ids = (paragraphs: { id: string }[]) => paragraphs.map((paragraph) => paragraph.id);
-
 describe("edition state", () => {
   test("starts with the OwO Times name, warm paper, and an editable story", () => {
     const edition = createDefaultEdition();
@@ -23,7 +21,7 @@ describe("edition state", () => {
     expect(edition.paperColor).toMatch(/^#[0-9a-f]{6}$/i);
     expect(edition.stories).toHaveLength(1);
     expect(edition.stories[0].headline).toBeTruthy();
-    expect(edition.stories[0].paragraphs.length).toBeGreaterThan(0);
+    expect(edition.stories[0].body).toBeTruthy();
   });
 
   test("normalizes incomplete or malformed edition data", () => {
@@ -33,7 +31,7 @@ describe("edition state", () => {
     expect(edition.paperColor).toBe(createDefaultEdition().paperColor);
     expect(edition.stories).toHaveLength(1);
     expect(edition.stories[0].headline).toBe("");
-    expect(edition.stories[0].paragraphs).toEqual([]);
+    expect(edition.stories[0].body).toBe("");
   });
 
   test("clamps invalid layout values and keeps valid ones", () => {
@@ -86,15 +84,21 @@ describe("edition state", () => {
     expect(edition.stories.map((story) => story.startsPage)).toEqual([true, false]);
   });
 
-  test("migrates a legacy body string into paragraphs split on blank lines", () => {
+  test("keeps a legacy body string as story text", () => {
     const edition = normalizeEdition({
       stories: [{ id: "s", headline: "H", body: "First para.\n\nSecond para\nline two.\n\n  " }],
     });
 
-    expect(edition.stories[0].paragraphs.map((paragraph) => paragraph.text)).toEqual([
-      "First para.",
-      "Second para\nline two.",
-    ]);
+    expect(edition.stories[0].body).toBe("First para.\n\nSecond para\nline two.\n\n  ");
+    expect(storyParagraphs(edition.stories[0].body)).toEqual(["First para.", "Second para\nline two."]);
+  });
+
+  test("joins saved paragraphs into the story text", () => {
+    const edition = normalizeEdition({
+      stories: [{ id: "s", paragraphs: [{ id: "p1", text: "one" }, { id: "p2", text: "two" }] }],
+    });
+
+    expect(edition.stories[0].body).toBe("one\n\ntwo");
   });
 
   test("keeps only the full-width span as a non-default story layout", () => {
@@ -125,35 +129,6 @@ describe("edition state", () => {
     expect(order(moveStory(edition, "a", null))).toEqual(["b", "c", "a"]);
     expect(moveStory(edition, "a", "missing")).toBe(edition);
     expect(moveStory(edition, "a", "a")).toBe(edition);
-  });
-
-  test("moves paragraphs within a story and across stories", () => {
-    const edition = normalizeEdition({
-      stories: [
-        { id: "a", paragraphs: [{ id: "p1", text: "one" }, { id: "p2", text: "two" }] },
-        { id: "b", paragraphs: [{ id: "p3", text: "three" }] },
-      ],
-    });
-
-    const reordered = moveParagraph(edition, "p2", "a", "p1");
-    expect(ids(reordered.stories[0].paragraphs)).toEqual(["p2", "p1"]);
-
-    const crossed = moveParagraph(edition, "p1", "b", "p3");
-    expect(ids(crossed.stories[0].paragraphs)).toEqual(["p2"]);
-    expect(ids(crossed.stories[1].paragraphs)).toEqual(["p1", "p3"]);
-
-    const appended = moveParagraph(edition, "p1", "b", null);
-    expect(ids(appended.stories[1].paragraphs)).toEqual(["p3", "p1"]);
-  });
-
-  test("ignores paragraph drops onto themselves or unknown targets", () => {
-    const edition = normalizeEdition({
-      stories: [{ id: "a", paragraphs: [{ id: "p1", text: "one" }] }],
-    });
-
-    expect(moveParagraph(edition, "p1", "a", "p1")).toBe(edition);
-    expect(moveParagraph(edition, "p1", "nowhere", null)).toBe(edition);
-    expect(moveParagraph(edition, "p1", "a", "missing")).toBe(edition);
   });
 
   test("updates layout fields without disturbing the rest", () => {

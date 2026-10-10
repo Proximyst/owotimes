@@ -1,14 +1,10 @@
 import {
-  addParagraph,
   addStory,
   createDefaultEdition,
-  moveParagraph,
   moveStory,
   normalizeEdition,
-  removeParagraph,
   removeStory,
   updateLayout,
-  updateParagraph,
   updateStory,
   updateText,
   type Edition,
@@ -27,14 +23,10 @@ export interface EditorController {
   updatePublication(changes: Partial<Pick<Edition, "name" | "paperColor" | "date">>): void;
   updateText(changes: Partial<EditionText>): void;
   updateLayout(changes: Partial<Layout>): void;
-  updateStory(id: string, changes: Partial<Pick<Story, "headline" | "imageKey" | "span" | "caption" | "kicker">>): void;
+  updateStory(id: string, changes: Partial<Pick<Story, "headline" | "body" | "imageKey" | "span" | "caption" | "kicker">>): void;
   addStory(): Story;
   removeStory(id: string): void;
   moveStory(id: string, beforeStoryId: string | null): void;
-  addParagraph(storyId: string): void;
-  updateParagraph(id: string, text: string): void;
-  removeParagraph(id: string): void;
-  moveParagraph(id: string, toStoryId: string, beforeParagraphId: string | null): void;
   reset(): void;
 }
 
@@ -70,18 +62,6 @@ export function createEditorController(initial: unknown, callbacks: EditorCallba
     },
     moveStory(id, beforeStoryId) {
       commit(moveStory(edition, id, beforeStoryId));
-    },
-    addParagraph(storyId) {
-      commit(addParagraph(edition, storyId));
-    },
-    updateParagraph(id, text) {
-      commit(updateParagraph(edition, id, text));
-    },
-    removeParagraph(id) {
-      commit(removeParagraph(edition, id));
-    },
-    moveParagraph(id, toStoryId, beforeParagraphId) {
-      commit(moveParagraph(edition, id, toStoryId, beforeParagraphId));
     },
     reset() {
       commit(createDefaultEdition());

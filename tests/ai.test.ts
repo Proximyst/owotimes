@@ -7,6 +7,8 @@ import {
   isValidBaseUrl,
   normalizeAiSettings,
   type AiSettings,
+  type AiStatus,
+  generateText,
 } from "../src/ai.ts";
 import { createAiSettingsStorage } from "../src/storage.ts";
 
@@ -65,5 +67,62 @@ describe("AI settings", () => {
 
     expect(createAiSettingsStorage(storage).save(READY)).toBe(true);
     expect(normalizeAiSettings(createAiSettingsStorage(storage).load())).toEqual(READY);
+  });
+});
+
+describe("AI text requests", () => {
+  // Serves the given responses in order, one per request, and counts the requests.
+  function serve(replies: Response[]) {
+    const requests = { count: 0 };
+    const server = Bun.serve({
+      port: 0,
+      fetch() {
+        requests.count += 1;
+        return replies.shift() ?? new Response("unexpected request", { status: 500 });
+      },
+    });
+    return { server, requests };
+  }
+
+  function sse(pieces: string[]): string {
+    return pieces.map((piece) => `data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}\n\n`).join("")
+      + "data: [DONE]\n\n";
+  }
+
+  test("retries a server error, reports each attempt, and streams the reply", async () => {
+    const { server, requests } = serve([
+      new Response("busy", { status: 503 }),
+      new Response(sse(["Brass ", "Byline"]), { headers: { "content-type": "text/event-stream" } }),
+    ]);
+    const statuses: AiStatus[] = [];
+    try {
+      const text = await generateText(
+        { ...READY, baseUrl: `http://127.0.0.1:${server.port}/v1` },
+        { field: "Byline", current: "", context: "" },
+        (status) => statuses.push(status),
+      );
+      expect(text).toBe("Brass Byline");
+      expect(requests.count).toBe(2);
+      expect(statuses).toEqual([
+        { phase: "waiting" },
+        { phase: "retrying", attempt: 2, attempts: 3, reason: "HTTP 503" },
+        { phase: "writing", tokens: 1 },
+        { phase: "writing", tokens: 2 },
+      ]);
+    } finally {
+      server.stop(true);
+    }
+  });
+
+  test("does not retry a client error", async () => {
+    const { server, requests } = serve([new Response("bad key", { status: 401 })]);
+    try {
+      await expect(
+        generateText({ ...READY, baseUrl: `http://127.0.0.1:${server.port}/v1` }, { field: "Byline", current: "", context: "" }),
+      ).rejects.toMatchObject({ status: 401 });
+      expect(requests.count).toBe(1);
+    } finally {
+      server.stop(true);
+    }
   });
 });

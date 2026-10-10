@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import type { Story, StoryChanges } from "../src/edition.ts";
 import { useDragState } from "../composables/useDragState.ts";
-import { generateText } from "../src/ai.ts";
+import { generateText, type AiReport } from "../src/ai.ts";
 import { useAiSettings } from "../composables/useAiSettings.ts";
 
 const props = defineProps<{
@@ -17,47 +17,36 @@ const emit = defineEmits<{
   remove: [];
   photo: [file: File];
   clearPhoto: [];
-  addParagraph: [];
-  updateParagraph: [id: string, text: string];
-  removeParagraph: [id: string];
-  drop: [target: { storyId: string; beforeParagraphId: string | null }];
+  drop: [storyId: string];
 }>();
 
 const drag = useDragState();
-const hoveredParagraphId = ref<string | null>(null);
 const settingsOpen = ref(false);
 const { ready: aiReady, settings: aiSettings } = useAiSettings();
-const aiParagraphId = ref<string | null>(null);
+const aiBodyOpen = ref(false);
 const aiPrompt = ref("");
 
 function allowDrop(event: DragEvent) {
   if (drag.active.value) event.preventDefault();
 }
 
-function hoverParagraph(id: string, event: DragEvent) {
-  allowDrop(event);
-  hoveredParagraphId.value = id;
+// Dropping a story on this one moves the dragged story before it.
+function dropOn() {
+  emit("drop", props.story.id);
 }
 
-// Dropping on a paragraph inserts before it; dropping on the story itself appends.
-function dropOn(beforeParagraphId: string | null) {
-  hoveredParagraphId.value = null;
-  emit("drop", { storyId: props.story.id, beforeParagraphId });
+// The modal's prompt is the reader's own request; the result replaces the whole story text.
+function bodyTask() {
+  return (report: AiReport) => generateText(aiSettings, { field: "Story text", current: props.story.body, context: props.context, prompt: aiPrompt.value }, report);
 }
 
-// The paragraph the AI modal is writing for. The prompt is the reader's own request.
-function paragraphTask() {
-  const current = props.story.paragraphs.find((paragraph) => paragraph.id === aiParagraphId.value)?.text ?? "";
-  return () => generateText(aiSettings, { field: "Story paragraph", current, context: props.context, prompt: aiPrompt.value });
-}
-
-function writeParagraph(text: string) {
-  if (aiParagraphId.value) emit("updateParagraph", aiParagraphId.value, text);
-  aiParagraphId.value = null;
+function writeBody(text: string) {
+  emit("update", { body: text });
+  aiBodyOpen.value = false;
 }
 
 function headlineTask() {
-  return () => generateText(aiSettings, { field: "Headline", current: props.story.headline, context: props.context });
+  return (report: AiReport) => generateText(aiSettings, { field: "Headline", current: props.story.headline, context: props.context }, report);
 }
 </script>
 
@@ -66,7 +55,7 @@ function headlineTask() {
     class="story-editor"
     :class="{ 'story-full': story.span === 'full' }"
     @dragover="allowDrop"
-    @drop.prevent="dropOn(null)"
+    @drop.prevent="dropOn"
   >
     <legend class="story-legend">
       <span
@@ -96,46 +85,26 @@ function headlineTask() {
       />
     </div>
 
-    <div class="paragraph-list">
-      <div
-        v-for="(paragraph, n) in story.paragraphs"
-        :key="paragraph.id"
-        class="paragraph-row"
-        :class="{ 'is-drop-target': hoveredParagraphId === paragraph.id }"
-        @dragover="hoverParagraph(paragraph.id, $event)"
-        @dragleave="hoveredParagraphId = null"
-        @drop.prevent.stop="dropOn(paragraph.id)"
-      >
-        <span
-          class="drag-handle"
-          draggable="true"
-          title="Drag to move paragraph"
-          aria-hidden="true"
-          @dragstart="drag.start({ kind: 'paragraph', id: paragraph.id }, $event.dataTransfer)"
-          @dragend="drag.end"
-        >⋮⋮</span>
-        <textarea
-          :aria-label="`Paragraph ${n + 1}`"
-          :value="paragraph.text"
-          @input="emit('updateParagraph', paragraph.id, ($event.target as HTMLTextAreaElement).value)"
-        />
-        <div class="paragraph-actions">
-          <button
-            v-if="aiReady"
-            type="button"
-            class="dice-button ai-button"
-            :title="`Write paragraph ${n + 1} with AI`"
-            :aria-label="`Write paragraph ${n + 1} with AI`"
-            @click="aiParagraphId = paragraph.id"
-          >AI</button>
-          <button type="button" class="button-danger" @click="emit('removeParagraph', paragraph.id)">Remove</button>
-        </div>
-      </div>
+    <label :for="`body-${story.id}`">Story text</label>
+    <div class="dice-row">
+      <textarea
+        :id="`body-${story.id}`"
+        rows="8"
+        :value="story.body"
+        @input="emit('update', { body: ($event.target as HTMLTextAreaElement).value })"
+      />
+      <button
+        v-if="aiReady"
+        type="button"
+        class="dice-button ai-button"
+        title="Write story text with AI"
+        aria-label="Write story text with AI"
+        @click="aiBodyOpen = true"
+      >AI</button>
     </div>
 
-    <p class="field-hint">Paragraphs support **bold** and *italic*.</p>
+    <p class="field-hint">Blank lines start a new paragraph. Paragraphs support **bold** and *italic*. Each paragraph after the first is indented.</p>
     <div class="button-row">
-      <button type="button" @click="emit('addParagraph')">Add paragraph</button>
       <button type="button" @click="settingsOpen = true">Story settings</button>
       <button type="button" class="button-danger" @click="emit('remove')">Remove story</button>
     </div>
@@ -151,10 +120,11 @@ function headlineTask() {
         @clear-photo="emit('clearPhoto')"
       />
     </Modal>
-    <Modal v-if="aiParagraphId" title="Write paragraph with AI" @close="aiParagraphId = null">
-      <label for="ai-paragraph-prompt">What should this paragraph say?</label>
-      <textarea id="ai-paragraph-prompt" v-model="aiPrompt" rows="4" />
-      <AiButton label="Write paragraph" :task="paragraphTask()" @result="writeParagraph" />
+    <Modal v-if="aiBodyOpen" title="Write story text with AI" @close="aiBodyOpen = false">
+      <label for="ai-body-prompt">What should the story say?</label>
+      <textarea id="ai-body-prompt" v-model="aiPrompt" rows="4" />
+      <p class="field-hint">The result replaces the whole story text.</p>
+      <AiButton label="Write story text" :task="bodyTask()" @result="writeBody" />
     </Modal>
   </fieldset>
 </template>

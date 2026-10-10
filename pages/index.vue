@@ -2,9 +2,11 @@
 import { computed, ref } from "vue";
 import { useEdition } from "../composables/useEdition.ts";
 import { useDragState } from "../composables/useDragState.ts";
+import { DEFAULT_EDITOR_WIDTH, useEditorWidth } from "../composables/useEditorWidth.ts";
 import { paperDimensions, pageSizeCss } from "../src/layout.ts";
 import { buildNewspaperView } from "../src/render.ts";
 import { editionContext } from "../src/edition.ts";
+import { useSheetExport } from "../composables/useSheetExport.ts";
 
 const {
   edition,
@@ -19,18 +21,21 @@ const {
   addStory,
   removeStory,
   moveStory,
-  addParagraph,
-  updateParagraph,
-  removeParagraph,
-  moveParagraph,
   setPhoto,
   clearPhoto,
 } = useEdition();
 
 const drag = useDragState();
+const { width: editorWidth, startDrag, moveDrag, endDrag, nudge } = useEditorWidth();
 const configuring = ref(false);
 
 const view = computed(() => edition.value ? buildNewspaperView(edition.value, photoUrls) : null);
+
+const preview = ref<{ sheetElements: () => HTMLElement[] } | null>(null);
+const { busy: exporting, error: exportError, exportPages, exportStrip } = useSheetExport(
+  () => view.value?.name ?? "",
+  () => preview.value?.sheetElements() ?? [],
+);
 
 // The @page size must match the paper size, so it is generated from the layout.
 useHead(() => ({
@@ -41,11 +46,10 @@ function printEdition() {
   window.print();
 }
 
-function onDrop(target: { storyId: string; beforeParagraphId: string | null }) {
+function onDrop(storyId: string) {
   const item = drag.active.value;
   drag.end();
-  if (item?.kind === "story") moveStory(item.id, target.storyId);
-  if (item?.kind === "paragraph") moveParagraph(item.id, target.storyId, target.beforeParagraphId);
+  if (item?.kind === "story") moveStory(item.id, storyId);
 }
 </script>
 
@@ -55,7 +59,7 @@ function onDrop(target: { storyId: string; beforeParagraphId: string | null }) {
     <p>Setting the type...</p>
   </main>
 
-  <main v-else class="app-shell" aria-label="Newspaper editor">
+  <main v-else class="app-shell" aria-label="Newspaper editor" :style="{ '--editor-default': `${DEFAULT_EDITOR_WIDTH}px`, '--editor-width': `${editorWidth}px` }">
     <aside class="editor-panel no-print" aria-label="Edition settings and stories">
       <ConfigurePanel
         v-if="configuring"
@@ -78,9 +82,6 @@ function onDrop(target: { storyId: string; beforeParagraphId: string | null }) {
         @remove="removeStory(story.id)"
         @photo="setPhoto(story.id, $event)"
         @clear-photo="clearPhoto(story.id)"
-        @add-paragraph="addParagraph(story.id)"
-        @update-paragraph="updateParagraph"
-        @remove-paragraph="removeParagraph"
         @drop="onDrop"
       />
 
@@ -92,6 +93,20 @@ function onDrop(target: { storyId: string; beforeParagraphId: string | null }) {
       </p>
       <p v-if="photoError" class="status-message" role="alert">{{ photoError }}</p>
     </aside>
+    <div
+      class="editor-resizer no-print"
+      role="separator"
+      aria-orientation="vertical"
+      aria-label="Resize stories panel"
+      :aria-valuenow="editorWidth"
+      tabindex="0"
+      @pointerdown="startDrag"
+      @pointermove="moveDrag"
+      @pointerup="endDrag"
+      @pointercancel="endDrag"
+      @keydown.left.prevent="nudge(-24)"
+      @keydown.right.prevent="nudge(24)"
+    ></div>
 
     <section class="preview" aria-label="Newspaper preview">
       <div class="button-row preview-toolbar no-print">
@@ -99,8 +114,11 @@ function onDrop(target: { storyId: string; beforeParagraphId: string | null }) {
           {{ configuring ? "Close configure" : "Configure" }}
         </button>
         <button type="button" @click="printEdition">Print</button>
+        <button type="button" :disabled="exporting" @click="exportPages()">PNG per page</button>
+        <button type="button" :disabled="exporting" @click="exportStrip()">Long PNG</button>
       </div>
-      <NewspaperPreview v-if="view" :view="view" />
+      <p v-if="exportError" class="status-message no-print" role="alert">{{ exportError }}</p>
+      <NewspaperPreview v-if="view" ref="preview" :view="view" />
     </section>
   </main>
 </template>

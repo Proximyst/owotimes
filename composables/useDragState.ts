@@ -1,6 +1,6 @@
 import { shallowRef } from "vue";
 
-export type DragItem = { kind: "story" | "paragraph"; id: string };
+export type DragItem = { kind: "story"; id: string };
 
 // Module-level so every story editor shares the one in-flight drag.
 const active = shallowRef<DragItem | null>(null);
