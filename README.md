@@ -1,5 +1,7 @@
 # OwO Times
 
+> **Fully vibe-coded. No maintenance is promised.** This project was written entirely with an AI coding assistant. It comes with NO warranty and NO promise of fixes, updates, security patches, or support. Use it at your own risk.
+
 A browser-only newspaper editor. Write stories, choose a layout, and see a live
 newspaper preview. Everything is stored in the browser: settings and text in
 localStorage, photos in IndexedDB. No data leaves the browser.
