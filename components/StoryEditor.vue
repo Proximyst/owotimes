@@ -7,6 +7,7 @@ const props = defineProps<{
   story: Story;
   index: number;
   photoUrl?: string;
+  context: string;
 }>();
 
 const emit = defineEmits<{
@@ -104,6 +105,7 @@ function dropOn(beforeParagraphId: string | null) {
     <Modal v-if="settingsOpen" :title="`Story ${index + 1} settings`" @close="settingsOpen = false">
       <StorySettings
         :story="story"
+        :context="context"
         :index="index"
         :photo-url="photoUrl"
         @update="emit('update', $event)"

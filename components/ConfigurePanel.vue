@@ -15,6 +15,7 @@ import { CRUMPLE_METHODS, PAPER_COLOURS, type CrumpleMethod } from "../src/paper
 import { PRICE_IDEAS, TAGLINE_IDEAS, TOP_RIGHT_IDEAS, randomFrom } from "../src/pools.ts";
 import { AI_PROVIDER_PRESETS, generateText } from "../src/ai.ts";
 import { useAiSettings } from "../composables/useAiSettings.ts";
+import { editionContext } from "../src/edition.ts";
 
 const props = defineProps<{ edition: Edition }>();
 const { settings: aiSettings, ready: aiReady, update: updateAi } = useAiSettings();
@@ -50,7 +51,7 @@ function aiTask(field: TextField) {
   return () => generateText(aiSettings, {
     field: field.label,
     current: props.edition.text[field.key],
-    context: `Newspaper: ${props.edition.name}, dated ${props.edition.date}`,
+    context: editionContext(props.edition),
   });
 }
 
@@ -120,7 +121,7 @@ const fontFields: { key: FontField; label: string }[] = [
             @roll="rollText(field)"
           />
           <AiButton
-            v-if="field.pool && aiReady"
+            v-if="aiReady"
             :label="`AI ${field.label.toLowerCase()}`"
             :task="aiTask(field)"
             @result="(text) => emit('text', { [field.key]: text })"

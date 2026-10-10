@@ -17,8 +17,7 @@ localStorage, photos in IndexedDB. No data leaves the browser.
   head with the page number. A page that is too long is flagged in the preview, because
   anything past its bottom is cut off.
 - **AI text (bring your own key):** Configure has an AI text section with the API
-  endpoint, model, key, temperature, and extra instructions. Once AI is switched on and
-  a model and key are set, an AI button appears next to each dice button. The settings
+  endpoint, model, key, temperature, and extra instructions, with buttons that fill in OpenAI, OpenRouter, or Anthropic presets. Once AI is switched on and a model and key are set, an AI button appears next to each text field in Configure and beside each story's label, byline, and caption. Each request sends all of the newspaper's text as context. The settings
   are stored only in this browser, and the page calls the endpoint directly, so the endpoint
   must allow browser (CORS) requests. The key is visible to anyone using this browser.
 - **Drag and drop:** drag the ⋮⋮ handle on a story to reorder stories. Drag the

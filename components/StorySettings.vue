@@ -6,6 +6,7 @@ import { useAiSettings } from "../composables/useAiSettings.ts";
 
 const props = defineProps<{
   story: Story;
+  context: string;
   index: number;
   photoUrl?: string;
 }>();
@@ -25,13 +26,8 @@ function onFile(event: Event) {
 
 const { ready: aiReady, settings: aiSettings } = useAiSettings();
 
-// Context for AI text: the story's headline and paragraphs.
-function storyContext(): string {
-  return [props.story.headline, ...props.story.paragraphs.map((paragraph) => paragraph.text)].join("\n\n");
-}
-
 function aiTask(field: string, current: string) {
-  return () => generateText(aiSettings, { field, current, context: storyContext() });
+  return () => generateText(aiSettings, { field, current, context: props.context });
 }
 </script>
 

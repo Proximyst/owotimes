@@ -38,7 +38,6 @@ export const AI_PROVIDER_PRESETS: readonly AiProviderPreset[] = [
 export const TEMPERATURE_RANGE = { min: 0, max: 2 } as const;
 const TEXT_MAX_LENGTH = 500;
 const INSTRUCTIONS_MAX_LENGTH = 1000;
-const CONTEXT_MAX_LENGTH = 2000;
 
 function textOf(value: unknown, fallback: string, maxLength = TEXT_MAX_LENGTH): string {
   return typeof value === "string" ? value.trim().slice(0, maxLength) : fallback;
@@ -93,7 +92,7 @@ export function buildAiMessages(settings: AiSettings, request: AiTextRequest): C
   ].filter(Boolean).join("\n");
   const user = [
     `Field: ${request.field}`,
-    request.context.trim() ? `Context:\n${request.context.trim().slice(0, CONTEXT_MAX_LENGTH)}` : "",
+    request.context.trim() ? `Context:\n${request.context.trim()}` : "",
     request.current ? `Current text (write something different): ${request.current}` : "",
   ].filter(Boolean).join("\n\n");
   return [

@@ -261,3 +261,18 @@ export function updateLayout(edition: Edition, changes: Partial<Layout>): Editio
 export function updateText(edition: Edition, changes: Partial<EditionText>): Edition {
   return { ...edition, text: { ...edition.text, ...changes } };
 }
+
+// All newspaper text in reading order, for AI prompts: masthead, labels, footer, then each story.
+export function editionContext(edition: Edition): string {
+  const storyText = edition.stories.flatMap((story) => [
+    story.kicker,
+    story.headline,
+    story.byline,
+    ...story.paragraphs.map((paragraph) => paragraph.text),
+    story.caption,
+  ]);
+  return [edition.name, edition.date, ...Object.values(edition.text), ...storyText]
+    .map((text) => text.trim())
+    .filter((text) => text !== "")
+    .join("\n");
+}

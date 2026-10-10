@@ -4,6 +4,7 @@ import { useEdition } from "../composables/useEdition.ts";
 import { useDragState } from "../composables/useDragState.ts";
 import { paperDimensions, pageSizeCss } from "../src/layout.ts";
 import { buildNewspaperView } from "../src/render.ts";
+import { editionContext } from "../src/edition.ts";
 
 const {
   edition,
@@ -68,6 +69,7 @@ function onDrop(target: { storyId: string; beforeParagraphId: string | null }) {
         v-for="(story, index) in edition.stories"
         :key="story.id"
         :story="story"
+        :context="editionContext(edition)"
         :index="index"
         :photo-url="story.imageKey ? photoUrls.get(story.imageKey) : undefined"
         @update="updateStory(story.id, $event)"
