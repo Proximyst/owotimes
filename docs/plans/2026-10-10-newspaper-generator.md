@@ -2,163 +2,161 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Build a browser-only newspaper editor that produces a configurable, printable newspaper as static files served by nginx.
+**Goal:** Build a browser-only newspaper editor that statically generates into files served by nginx.
 
-**Architecture:** Use vanilla JavaScript modules and CSS with Bun as the development/build tool only. Keep one edition in browser storage, putting settings and story text in localStorage and photo blobs in IndexedDB; render the edition into a live semantic newspaper preview. The build output contains only static assets and nginx configuration, with no API or runtime server.
+**Architecture:** Use Nuxt 3 and TypeScript with client-only edition state. Persist settings and story text in localStorage and photo blobs in IndexedDB, then render a live newspaper preview. `nuxt generate` produces the deployable static site; do not add API/server routes or deploy a Nuxt runtime.
 
-**Tech Stack:** Bun, vanilla JavaScript, HTML, CSS, Bun's built-in test runner, nginx.
+**Tech Stack:** Bun, Nuxt 3, Vue 3, TypeScript, Bun test runner, nginx.
 
 ---
 
-### Task 1: Establish the static Bun project and test command
+### Task 1: Establish the Nuxt static project
 
 **Files:**
 - Create: `package.json`
-- Create: `src/index.html`
-- Create: `src/main.js`
-- Create: `src/styles.css`
+- Create: `nuxt.config.ts`
+- Create: `app.vue`
+- Create: `pages/index.vue`
+- Create: `assets/css/main.css`
 - Create: `nginx.conf`
-- Test: `tests/project.test.js`
+- Test: `tests/project.test.ts`
 
-**Step 1: Add a failing project contract test**
+**Step 1: Write a failing project contract test**
 
-Create a Bun test that reads the package manifest and source entry points and asserts that a build script exists and that the HTML entry imports the app stylesheet and JavaScript module.
+Assert that package scripts include dev, generate/build, and test; Nuxt is a dependency; SSR is disabled; and the app has a page and global stylesheet.
 
-**Step 2: Run the test to verify it fails**
+**Step 2: Verify the test fails**
 
-Run: `bun test tests/project.test.js`
-Expected: FAIL because the project manifest and source files do not exist yet.
+Run: `bun test tests/project.test.ts`
+Expected: FAIL because the Nuxt project has not been created.
 
-**Step 3: Add the minimal static project skeleton**
+**Step 3: Create the minimal Nuxt static scaffold**
 
-Define `build` as a Bun build command that outputs the JavaScript bundle into `dist`, and make the command copy `src/index.html` and `src/styles.css` to `dist`. Define `test` as `bun test`. Add an HTML shell with a stylesheet and module entry. Add an nginx config that serves `/usr/share/nginx/html` and falls back to `index.html` for app routes.
+Set `build` to `nuxt generate`, disable SSR, configure global CSS and page metadata, and add an accessible page shell. Configure nginx to serve `/usr/share/nginx/html` with static-file fallback.
 
-**Step 4: Run the project contract and build**
+**Step 4: Verify project contract and dependency setup**
 
-Run: `bun test tests/project.test.js && bun run build`
-Expected: PASS and a `dist` directory containing HTML, CSS, and bundled JavaScript.
+Run: `bun install && bun test tests/project.test.ts`
+Expected: PASS and dependencies install successfully.
 
-### Task 2: Define edition state and persistence
+### Task 2: Define typed edition state and persistence
 
 **Files:**
-- Create: `src/edition.js`
-- Create: `src/storage.js`
-- Create: `tests/edition.test.js`
-- Modify: `package.json`
+- Create: `src/edition.ts`
+- Create: `src/storage.ts`
+- Test: `tests/edition.test.ts`
 
 **Step 1: Write failing edition behavior tests**
 
-Test the default publication name `OwO Times`, warm default paper tone, an initial editable story, creation/removal of stories, and normalization of incomplete or malformed edition data. Test persistence through an injectable storage adapter so the edition module is independent of browser globals.
+Test default `OwO Times` name, warm paper tone, default story, normalization of incomplete/malformed data, immutable story add/update/remove, and localStorage adapter persistence.
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Verify tests fail**
 
-Run: `bun test tests/edition.test.js`
-Expected: FAIL because edition and storage modules are not implemented.
+Run: `bun test tests/edition.test.ts`
+Expected: FAIL because edition modules do not yet exist.
 
-**Step 3: Implement edition state operations and storage adapters**
+**Step 3: Implement typed edition operations and browser storage**
 
-Export default edition creation, edition normalization, and story add/update/remove operations from `src/edition.js`. Implement localStorage-backed text/settings persistence and IndexedDB photo-blob persistence in `src/storage.js`; keep the localStorage interface replaceable in tests. Store stable story IDs and image keys, not image data URLs, in the edition record.
+Define `Edition` and `Story` types and implement default creation, normalization, and immutable story operations. Add injectable localStorage persistence and IndexedDB photo save/load/remove helpers. Keep image blobs out of localStorage.
 
-**Step 4: Run edition tests**
+**Step 4: Verify edition tests**
 
-Run: `bun test tests/edition.test.js`
-Expected: PASS for defaults, normalization, story operations, and injected persistence behavior.
+Run: `bun test tests/edition.test.ts`
+Expected: PASS.
 
-### Task 3: Render the newspaper preview
-
-**Files:**
-- Create: `src/render.js`
-- Create: `tests/render.test.js`
-- Modify: `src/styles.css`
-
-**Step 1: Write failing renderer tests**
-
-Test that the renderer produces a masthead with the configured name, date/edition line, story headline and text, optional image markup, and safely escaped user-provided HTML characters.
-
-**Step 2: Run tests to verify they fail**
-
-Run: `bun test tests/render.test.js`
-Expected: FAIL because no newspaper renderer exists.
-
-**Step 3: Implement semantic preview markup and newspaper styling**
-
-Render escaped edition content into semantic masthead, article, heading, paragraph, and figure elements. Implement a warm paper background with subtle layered crumple texture, configurable paper tone via a CSS custom property, British-inspired serif display typography, newspaper rules, and multi-column story layout. At narrow widths, collapse columns so the preview remains readable.
-
-**Step 4: Run renderer tests**
-
-Run: `bun test tests/render.test.js`
-Expected: PASS including HTML escaping and optional-photo behavior.
-
-### Task 4: Add the responsive editor and photo workflow
+### Task 3: Implement the live newspaper preview
 
 **Files:**
-- Modify: `src/index.html`
-- Modify: `src/main.js`
-- Modify: `src/styles.css`
-- Create: `src/editor.js`
-- Create: `tests/editor.test.js`
+- Create: `components/NewspaperPreview.vue`
+- Test: `tests/render.test.ts`
+- Modify: `assets/css/main.css`
 
-**Step 1: Write failing editor behavior tests**
+**Step 1: Write failing rendering tests**
 
-Test that editor actions update publication name, paper tone, story headline/body, add/remove stories, and selected photo association, and that each action triggers persistence and preview rendering through injected callbacks.
+Test publication masthead, date, headline, body text, optional photo, and escaping/rendering user content as text rather than unsafe HTML.
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Verify tests fail**
 
-Run: `bun test tests/editor.test.js`
-Expected: FAIL because the editor event handlers do not exist.
+Run: `bun test tests/render.test.ts`
+Expected: FAIL because the preview component is missing.
 
-**Step 3: Implement editor controls and browser wiring**
+**Step 3: Implement semantic preview and newspaper style**
 
-Create an accessible editor panel with publication-name input, paper color input, story form fields, add/remove story controls, and local image file inputs. Store image blobs in IndexedDB and use object URLs only for display; revoke replaced/removed preview URLs. Connect editor events to edition operations, persistence, and preview rendering. Load the persisted edition on startup and recover to defaults if stored data cannot be read.
+Render the configured publication and stories as semantic Vue markup. Add a warm adjustable paper surface with layered crumple texture, British-inspired serif masthead and display headlines, rules, image captions, and column layout that collapses on narrow screens.
 
-**Step 4: Run editor and full unit tests**
+**Step 4: Verify preview tests**
+
+Run: `bun test tests/render.test.ts`
+Expected: PASS, including text escaping and photo-optional cases.
+
+### Task 4: Implement reactive editor and photo workflow
+
+**Files:**
+- Modify: `pages/index.vue`
+- Create: `components/StoryEditor.vue`
+- Create: `composables/useEdition.ts`
+- Test: `tests/editor.test.ts`
+
+**Step 1: Write failing editor state tests**
+
+Test publication name/paper tone updates, headline/body updates, story add/remove, image-key association, and persistence/render notifications via injected callbacks.
+
+**Step 2: Verify tests fail**
+
+Run: `bun test tests/editor.test.ts`
+Expected: FAIL because editor composable does not exist.
+
+**Step 3: Implement typed editor controls and storage wiring**
+
+Create accessible publication controls, color input, editable story fields, add/remove controls, and local image upload. Save photo blobs to IndexedDB, display via object URLs and revoke replaced URLs. Load edition only after client mount, render preview reactively, and fall back to defaults on storage errors.
+
+**Step 4: Verify editor and current test suite**
 
 Run: `bun test`
-Expected: PASS for project, edition, render, and editor test files.
+Expected: all unit tests pass.
 
-### Task 5: Add print output and document static deployment
+### Task 5: Add print, documentation, and static build checks
 
 **Files:**
-- Modify: `src/index.html`
-- Modify: `src/main.js`
-- Modify: `src/styles.css`
+- Modify: `pages/index.vue`
+- Modify: `assets/css/main.css`
 - Modify: `nginx.conf`
 - Create: `README.md`
-- Create: `tests/build.test.js`
+- Test: `tests/build.test.ts`
 
-**Step 1: Write failing static-build contract tests**
+**Step 1: Write failing generation contract test**
 
-Assert that the build output contains the HTML, CSS, and JavaScript assets; contains no API/server bundle; and nginx config serves the static output directory. Add a print control and assert it is not part of print media output by checking the corresponding print CSS selectors or markup classes.
+Assert generated output includes the page and client assets, nginx serves the generated directory, and print button/editor are excluded by print CSS.
 
-**Step 2: Run tests to verify they fail**
+**Step 2: Verify test fails**
 
-Run: `bun test tests/build.test.js`
-Expected: FAIL until print styling and build assertions are in place.
+Run: `bun test tests/build.test.ts`
+Expected: FAIL before generation/print support is complete.
 
-**Step 3: Implement print layout and usage/deployment instructions**
+**Step 3: Implement browser print and deployment instructions**
 
-Add a print button calling `window.print()`. Hide editor and controls in print media, use a white page with clean ink-safe rules, and keep the newspaper masthead and article content together where practical. Document Bun install/test/build commands and copying `dist` to nginx's document root; clarify that Bun is not required in production.
+Add a print button invoking `window.print()`. Hide editor controls in print, use ink-safe white background and page margins, and avoid splitting article blocks where possible. Document Bun install/dev/test/generate commands and copying `.output/public` into nginx's document root; Bun and Node are not required in production.
 
-**Step 4: Run all tests and make a production build**
+**Step 4: Generate and test the deployable site**
 
 Run: `bun test && bun run build`
-Expected: all tests pass and `dist` contains only static deployable assets.
+Expected: all tests pass and Nuxt generates `.output/public` static files.
 
 **Step 5: Verify browser behavior and nginx-only runtime**
 
-Serve `dist` with nginx and manually verify at desktop and mobile widths: editing, refresh persistence, photo persistence after refresh, paper tone changes, story add/remove, and print preview. Confirm the production container/process list requires only nginx and no Bun server.
+Serve `.output/public` with nginx and verify desktop/mobile editing, reload persistence, image persistence, paper tone, story add/remove, and print preview. Confirm the deployed process set contains only nginx.
 
 ### Task 6: Final verification
 
 **Files:**
-- Verify: `package.json`, `src/`, `tests/`, `nginx.conf`, `README.md`
+- Verify: `package.json`, `nuxt.config.ts`, `pages/`, `components/`, `composables/`, `src/`, `tests/`, `nginx.conf`, `README.md`
 
-**Step 1: Run the complete validation sequence**
+**Step 1: Run validation from a clean generated output**
 
 Run: `bun test && bun run build`
-Expected: all tests pass and static build succeeds from a clean build output directory.
+Expected: tests pass and static generation succeeds.
 
-**Step 2: Inspect the deployment artifact**
+**Step 2: Inspect deployment output and worktree**
 
-Run: `git status --short` and inspect `dist` contents.
-Expected: only intended project changes are present and deployment artifact contains no server-side runtime code.
+Inspect `.output/public` and run `git status --short`.
+Expected: deploy output is static-only; only intended files are modified.

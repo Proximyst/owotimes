@@ -1,0 +1,22 @@
+{
+  "name": "owo-times",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --host 0.0.0.0",
+    "build": "nuxt generate",
+    "preview": "nuxi preview",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@fontsource/playfair-display": "^5.3.0",
+    "@fontsource/unifrakturmaguntia": "^5.3.0",
+    "nuxt": "^4.6.1",
+    "vue": "^3.5.43",
+    "vue-router": "^5.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

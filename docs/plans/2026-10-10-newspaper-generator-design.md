@@ -9,11 +9,11 @@ style takes cues from traditional British newspapers.
 
 ## Runtime and delivery
 
-The delivered app is static HTML, CSS, and JavaScript. Bun may be used during
-development and to build/package the static output, but it is not present at
-runtime. Nginx serves the resulting files; the browser performs all editing,
-preview, persistence, and printing. There is no application server, API, or
-remote storage dependency.
+The app is built with Nuxt and TypeScript and statically generated for deployment.
+Bun is used for development, tests, and the build, but is not present at runtime.
+Nginx serves Nuxt's generated static output; the browser performs all editing,
+preview, persistence, and printing. There are no server routes, runtime Nuxt
+server, API, or remote storage dependency.
 
 ## User experience
 
@@ -35,10 +35,10 @@ is sent to a server.
 
 ## Alternatives considered
 
-1. A minimal vanilla-JavaScript static app has the smallest dependency and
-   runtime footprint, and fits the nginx-only deployment requirement.
-2. A framework-based static app offers more structure but adds dependencies
-   without a current need for a larger client application.
+1. A Nuxt static-generated TypeScript app provides typed components and
+   conventions while keeping production deployment static and browser-only.
+2. A minimal vanilla-JavaScript static app has fewer dependencies, but less
+   structure for the editor and reactive preview.
 3. A server-backed editor can share editions across devices, but conflicts with
    the requirement that nginx alone serve the deployed output.
 
@@ -52,6 +52,6 @@ scope. Local photo uploads and browser print/PDF are included.
 
 ## Validation
 
-Verify the static build can be served without Bun at runtime; exercise editing,
+Verify Nuxt static generation can be served without Bun at runtime; exercise editing,
 refresh persistence, image upload persistence, responsive preview behavior, and
 print layout in a browser; run project checks/build using Bun.

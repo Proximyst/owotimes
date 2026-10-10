@@ -1,0 +1,192 @@
+<script setup lang="ts">
+import type { Edition, EditionText } from "../src/edition.ts";
+import {
+  BODY_SIZE_RANGE,
+  COLUMN_RANGE,
+  CRUMPLE_RANGE,
+  CUSTOM_HEIGHT_RANGE,
+  CUSTOM_WIDTH_RANGE,
+  FONT_PRESETS,
+  PAPER_SIZE_LABELS,
+  type Layout,
+  type PaperSize,
+} from "../src/layout.ts";
+import { CRUMPLE_METHODS, PAPER_COLOURS, type CrumpleMethod } from "../src/paper.ts";
+
+defineProps<{ edition: Edition }>();
+
+const emit = defineEmits<{
+  publication: [changes: Partial<Pick<Edition, "name" | "paperColor" | "date">>];
+  text: [changes: Partial<EditionText>];
+  layout: [changes: Partial<Layout>];
+}>();
+
+const paperSizes = Object.keys(PAPER_SIZE_LABELS) as PaperSize[];
+const columnOptions = Array.from(
+  { length: COLUMN_RANGE.max - COLUMN_RANGE.min + 1 },
+  (_, offset) => COLUMN_RANGE.min + offset,
+);
+
+const textFields: { key: keyof EditionText; label: string }[] = [
+  { key: "topLeft", label: "Top left" },
+  { key: "topRight", label: "Top right" },
+  { key: "tagline", label: "Tagline under masthead" },
+  { key: "banner", label: "Banner line" },
+  { key: "footer", label: "Footer" },
+  { key: "byline", label: "Byline" },
+];
+
+type FontField = "mastheadFont" | "headlineFont" | "bodyFont";
+
+const fontFields: { key: FontField; label: string }[] = [
+  { key: "mastheadFont", label: "Masthead font" },
+  { key: "headlineFont", label: "Headline font" },
+  { key: "bodyFont", label: "Body font" },
+];
+</script>
+
+<template>
+  <section class="configure-panel" aria-label="Configure newspaper">
+    <fieldset>
+      <legend>Publication</legend>
+      <label for="cfg-name">Name</label>
+      <input
+        id="cfg-name"
+        type="text"
+        :value="edition.name"
+        @input="emit('publication', { name: ($event.target as HTMLInputElement).value })"
+      >
+      <label for="cfg-date">Date line</label>
+      <input
+        id="cfg-date"
+        type="text"
+        :value="edition.date"
+        @input="emit('publication', { date: ($event.target as HTMLInputElement).value })"
+      >
+      <label for="cfg-tone">Paper tone</label>
+      <div class="swatch-row">
+        <button
+          v-for="colour in PAPER_COLOURS"
+          :key="colour.hex"
+          type="button"
+          class="swatch"
+          :class="{ 'is-selected': edition.paperColor.toLowerCase() === colour.hex }"
+          :style="{ background: colour.hex }"
+          :title="colour.name"
+          :aria-label="`Paper tone: ${colour.name}`"
+          @click="emit('publication', { paperColor: colour.hex })"
+        ></button>
+        <input
+          id="cfg-tone"
+          type="color"
+          :value="edition.paperColor"
+          @input="emit('publication', { paperColor: ($event.target as HTMLInputElement).value })"
+        >
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Masthead, labels, and footer text</legend>
+      <template v-for="field in textFields" :key="field.key">
+        <label :for="`cfg-text-${field.key}`">{{ field.label }}</label>
+        <input
+          :id="`cfg-text-${field.key}`"
+          type="text"
+          :value="edition.text[field.key]"
+          @input="emit('text', { [field.key]: ($event.target as HTMLInputElement).value })"
+        >
+      </template>
+    </fieldset>
+
+    <fieldset>
+      <legend>Paper and columns</legend>
+      <label for="cfg-paper">Paper size</label>
+      <select
+        id="cfg-paper"
+        :value="edition.layout.paperSize"
+        @change="emit('layout', { paperSize: ($event.target as HTMLSelectElement).value as PaperSize })"
+      >
+        <option v-for="size in paperSizes" :key="size" :value="size">{{ PAPER_SIZE_LABELS[size] }}</option>
+      </select>
+
+      <template v-if="edition.layout.paperSize === 'Custom'">
+        <label for="cfg-width">Width: {{ edition.layout.customWidthMm }} mm</label>
+        <input
+          id="cfg-width"
+          type="range"
+          :min="CUSTOM_WIDTH_RANGE.min"
+          :max="CUSTOM_WIDTH_RANGE.max"
+          step="1"
+          :value="edition.layout.customWidthMm"
+          @input="emit('layout', { customWidthMm: Number(($event.target as HTMLInputElement).value) })"
+        >
+        <label for="cfg-height">Height: {{ edition.layout.customHeightMm }} mm</label>
+        <input
+          id="cfg-height"
+          type="range"
+          :min="CUSTOM_HEIGHT_RANGE.min"
+          :max="CUSTOM_HEIGHT_RANGE.max"
+          step="1"
+          :value="edition.layout.customHeightMm"
+          @input="emit('layout', { customHeightMm: Number(($event.target as HTMLInputElement).value) })"
+        >
+      </template>
+
+      <label for="cfg-columns">Columns</label>
+      <select
+        id="cfg-columns"
+        :value="edition.layout.columns"
+        @change="emit('layout', { columns: Number(($event.target as HTMLSelectElement).value) })"
+      >
+        <option v-for="count in columnOptions" :key="count" :value="count">{{ count }}</option>
+      </select>
+
+      <label for="cfg-body-size">Body text size: {{ edition.layout.bodySize }} pt</label>
+      <input
+        id="cfg-body-size"
+        type="range"
+        :min="BODY_SIZE_RANGE.min"
+        :max="BODY_SIZE_RANGE.max"
+        step="1"
+        :value="edition.layout.bodySize"
+        @input="emit('layout', { bodySize: Number(($event.target as HTMLInputElement).value) })"
+      >
+      <label for="cfg-crumple">Paper crumple: {{ edition.layout.crumple }}%</label>
+      <input
+        id="cfg-crumple"
+        type="range"
+        :min="CRUMPLE_RANGE.min"
+        :max="CRUMPLE_RANGE.max"
+        step="1"
+        :value="edition.layout.crumple"
+        @input="emit('layout', { crumple: Number(($event.target as HTMLInputElement).value) })"
+      >
+      <label for="cfg-crumple-method">Crumple method</label>
+      <select
+        id="cfg-crumple-method"
+        :value="edition.layout.crumpleMethod"
+        @change="emit('layout', { crumpleMethod: ($event.target as HTMLSelectElement).value as CrumpleMethod })"
+      >
+        <option v-for="(method, key) in CRUMPLE_METHODS" :key="key" :value="key">{{ method.label }}</option>
+      </select>
+    </fieldset>
+
+    <fieldset>
+      <legend>Fonts</legend>
+      <p class="field-hint">Type any font name. Bundled fonts work everywhere; other names use the reader's installed fonts.</p>
+      <datalist id="font-presets">
+        <option v-for="font in FONT_PRESETS" :key="font" :value="font" />
+      </datalist>
+      <template v-for="field in fontFields" :key="field.key">
+        <label :for="`cfg-${field.key}`">{{ field.label }}</label>
+        <input
+          :id="`cfg-${field.key}`"
+          type="text"
+          list="font-presets"
+          :value="edition.layout[field.key]"
+          @input="emit('layout', { [field.key]: ($event.target as HTMLInputElement).value })"
+        >
+      </template>
+    </fieldset>
+  </section>
+</template>
