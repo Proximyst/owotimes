@@ -55,6 +55,10 @@ function writeParagraph(text: string) {
   if (aiParagraphId.value) emit("updateParagraph", aiParagraphId.value, text);
   aiParagraphId.value = null;
 }
+
+function headlineTask() {
+  return () => generateText(aiSettings, { field: "Headline", current: props.story.headline, context: props.context });
+}
 </script>
 
 <template>
@@ -77,12 +81,20 @@ function writeParagraph(text: string) {
     </legend>
 
     <label :for="`headline-${story.id}`">Headline</label>
-    <input
-      :id="`headline-${story.id}`"
-      type="text"
-      :value="story.headline"
-      @input="emit('update', { headline: ($event.target as HTMLInputElement).value })"
-    >
+    <div class="dice-row">
+      <input
+        :id="`headline-${story.id}`"
+        type="text"
+        :value="story.headline"
+        @input="emit('update', { headline: ($event.target as HTMLInputElement).value })"
+      >
+      <AiButton
+        v-if="aiReady"
+        :label="`AI headline for story ${index + 1}`"
+        :task="headlineTask()"
+        @result="(text) => emit('update', { headline: text })"
+      />
+    </div>
 
     <div class="paragraph-list">
       <div
