@@ -34,6 +34,7 @@ localStorage, photos in IndexedDB. No data leaves the browser.
     Playfair Display (body and headlines) and UnifrakturMaguntia (masthead) are
     bundled with the site and render everywhere. Other names use the reader's
     installed fonts and fall back to a serif if missing.
+- **Reset:** the Reset newspaper button at the bottom of Configure restores the default newspaper. All stories, photos, text, and layout are removed; AI settings are kept.
 
 Keyboard users can edit everything, but paragraphs and stories can only be
 reordered by dragging.

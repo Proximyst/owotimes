@@ -126,5 +126,12 @@ export function useEdition() {
       controller?.updateStory(id, { imageKey: null });
       await discardPhoto(key);
     },
+    async resetEdition() {
+      const keys = (edition.value?.stories ?? []).map((story) => story.imageKey);
+      controller?.reset();
+      for (const key of keys) {
+        if (key) await discardPhoto(key);
+      }
+    },
   };
 }

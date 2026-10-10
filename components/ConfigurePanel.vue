@@ -24,6 +24,7 @@ const emit = defineEmits<{
   publication: [changes: Partial<Pick<Edition, "name" | "paperColor" | "date">>];
   text: [changes: Partial<EditionText>];
   layout: [changes: Partial<Layout>];
+  reset: [];
 }>();
 
 const paperSizes = Object.keys(PAPER_SIZE_LABELS) as PaperSize[];
@@ -45,6 +46,11 @@ const textFields: TextField[] = [
 function rollText(field: TextField) {
   if (!field.pool) return;
   emit("text", { [field.key]: randomFrom(field.pool, props.edition.text[field.key]) });
+}
+
+// Removes stories, photos, text, and layout. AI settings live in their own storage and survive.
+function resetEdition() {
+  if (window.confirm("Reset the newspaper? All stories, photos, text, and layout will be removed. AI settings are kept.")) emit("reset");
 }
 
 function aiTask(field: TextField) {
@@ -285,6 +291,11 @@ const fontFields: { key: FontField; label: string }[] = [
           @input="emit('layout', { [field.key]: ($event.target as HTMLInputElement).value })"
         >
       </template>
+    </fieldset>
+    <fieldset>
+      <legend>Reset</legend>
+      <p class="field-hint">Restores the default newspaper. All stories, photos, text, and layout are removed. AI settings are kept.</p>
+      <button type="button" class="button-danger" @click="resetEdition">Reset newspaper</button>
     </fieldset>
   </section>
 </template>

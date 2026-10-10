@@ -1,6 +1,7 @@
 import {
   addParagraph,
   addStory,
+  createDefaultEdition,
   moveParagraph,
   moveStory,
   normalizeEdition,
@@ -34,6 +35,7 @@ export interface EditorController {
   updateParagraph(id: string, text: string): void;
   removeParagraph(id: string): void;
   moveParagraph(id: string, toStoryId: string, beforeParagraphId: string | null): void;
+  reset(): void;
 }
 
 export function createEditorController(initial: unknown, callbacks: EditorCallbacks = {}): EditorController {
@@ -80,6 +82,9 @@ export function createEditorController(initial: unknown, callbacks: EditorCallba
     },
     moveParagraph(id, toStoryId, beforeParagraphId) {
       commit(moveParagraph(edition, id, toStoryId, beforeParagraphId));
+    },
+    reset() {
+      commit(createDefaultEdition());
     },
   };
 }

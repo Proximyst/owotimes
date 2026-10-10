@@ -14,6 +14,7 @@ const {
   updatePublication,
   updateText,
   updateLayout,
+  resetEdition,
   updateStory,
   addStory,
   removeStory,
@@ -62,6 +63,7 @@ function onDrop(target: { storyId: string; beforeParagraphId: string | null }) {
         @publication="updatePublication"
         @text="updateText"
         @layout="updateLayout"
+        @reset="resetEdition"
       />
 
       <h2>Stories</h2>
