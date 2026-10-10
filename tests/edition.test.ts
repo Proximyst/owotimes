@@ -11,6 +11,7 @@ import {
   type Edition,
 } from "../src/edition.ts";
 import { createEditionStorage } from "../src/storage.ts";
+import { CAPTION_IDEAS, KICKER_IDEAS } from "../src/pools.ts";
 
 const ids = (paragraphs: { id: string }[]) => paragraphs.map((paragraph) => paragraph.id);
 
@@ -47,13 +48,13 @@ describe("edition state", () => {
     expect(layout.headlineFont).toBe("Playfair Display");
   });
 
-  test("allows a cleared byline", () => {
-    const edition = normalizeEdition({ text: { byline: "" } });
+  test("allows a cleared per-story byline", () => {
+    const edition = normalizeEdition({ stories: [{ id: "a", headline: "A", byline: "" }] });
 
-    expect(edition.text.byline).toBe("");
+    expect(edition.stories[0].byline).toBe("");
   });
 
-  test("keeps each story's kicker and gives stories without one the default kicker", () => {
+  test("keeps each story's kicker and gives stories without one a kicker from the pool", () => {
     const edition = normalizeEdition({
       stories: [
         { id: "a", headline: "A", kicker: "Front page" },
@@ -62,10 +63,10 @@ describe("edition state", () => {
     });
 
     expect(edition.stories[0].kicker).toBe("Front page");
-    expect(edition.stories[1].kicker).toBe(addStory(createDefaultEdition()).story.kicker);
+    expect(KICKER_IDEAS).toContain(edition.stories[1].kicker);
   });
 
-  test("keeps captions per story and gives stories without one the default caption", () => {
+  test("keeps captions per story and gives stories without one a caption from the pool", () => {
     const edition = normalizeEdition({
       stories: [
         { id: "a", headline: "A", caption: "Harbour at dawn" },
@@ -74,7 +75,7 @@ describe("edition state", () => {
     });
 
     expect(edition.stories[0].caption).toBe("Harbour at dawn");
-    expect(edition.stories[1].caption).toBe(createDefaultEdition().stories[0].caption);
+    expect(CAPTION_IDEAS).toContain(edition.stories[1].caption);
   });
 
   test("migrates a legacy body string into paragraphs split on blank lines", () => {

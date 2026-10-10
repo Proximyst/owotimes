@@ -1,6 +1,6 @@
 import { onBeforeUnmount, onMounted, reactive, shallowRef, ref } from "vue";
 import { createEditorController, type EditorController } from "../src/editor.ts";
-import type { Edition, EditionText, Story } from "../src/edition.ts";
+import type { Edition, EditionText, Story, StoryChanges } from "../src/edition.ts";
 import type { Layout } from "../src/layout.ts";
 import { createEditionStorage, photoStorage } from "../src/storage.ts";
 
@@ -78,7 +78,7 @@ export function useEdition() {
     updateLayout(changes: Partial<Layout>) {
       controller?.updateLayout(changes);
     },
-    updateStory(id: string, changes: Partial<Pick<Story, "headline" | "span" | "caption" | "kicker">>) {
+    updateStory(id: string, changes: StoryChanges) {
       controller?.updateStory(id, changes);
     },
     addStory() {

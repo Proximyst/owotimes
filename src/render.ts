@@ -11,6 +11,7 @@ export interface StoryView {
   imageUrl: string | null;
   caption: string;
   kicker: string;
+  byline: string;
 }
 
 export interface LayoutView {
@@ -68,6 +69,7 @@ export function buildNewspaperView(edition: Edition, imageUrls: ReadonlyMap<stri
         imageUrl: story.imageKey ? imageUrls.get(story.imageKey) ?? null : null,
         caption: story.caption,
         kicker: story.kicker,
+        byline: story.byline,
       };
     }),
   };

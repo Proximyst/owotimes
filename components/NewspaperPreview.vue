@@ -44,7 +44,7 @@ const cssVars = computed(() => ({
         </figure>
         <p class="story-kicker">{{ story.kicker }}</p>
         <h2>{{ story.headline }}</h2>
-        <p class="story-byline">{{ view.text.byline }}</p>
+        <p class="story-byline">{{ story.byline }}</p>
         <p v-for="(text, n) in story.paragraphs" :key="n" class="story-copy"><MarkdownText :source="text" /></p>
       </article>
     </section>

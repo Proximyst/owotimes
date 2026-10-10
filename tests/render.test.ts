@@ -16,9 +16,10 @@ describe("newspaper view model", () => {
           imageKey: "photo-1",
           caption: "Tea caption",
           kicker: "Front page",
+          byline: "By the librarian",
           span: "full" as const,
         },
-        { id: "two", headline: "Second", paragraphs: [], imageKey: null, caption: "", span: "column" as const },
+        { id: "two", headline: "Second", paragraphs: [], imageKey: null, caption: "", kicker: "Kicker two", byline: "By two", span: "column" as const },
       ],
     };
     const view = buildNewspaperView(edition, new Map([["photo-1", "blob:photo"]]));
@@ -36,6 +37,7 @@ describe("newspaper view model", () => {
       imageUrl: "blob:photo",
       caption: "Tea caption",
       kicker: "Front page",
+      byline: "By the librarian",
     });
     expect(view.stories[1].isLead).toBe(false);
     expect(view.stories[1].isFull).toBe(false);
@@ -75,8 +77,8 @@ describe("newspaper view model", () => {
     const edition = {
       ...createDefaultEdition(),
       stories: [
-        { id: "a", headline: "A", paragraphs: [], imageKey: "photo-1", caption: "Tea caption", kicker: "Kicker A", span: "column" as const },
-        { id: "b", headline: "B", paragraphs: [], imageKey: "photo-2", caption: "Second caption", kicker: "Kicker B", span: "column" as const },
+        { id: "a", headline: "A", paragraphs: [], imageKey: "photo-1", caption: "Tea caption", kicker: "Kicker A", byline: "By A", span: "column" as const },
+        { id: "b", headline: "B", paragraphs: [], imageKey: "photo-2", caption: "Second caption", kicker: "Kicker B", byline: "By B", span: "column" as const },
       ],
     };
     const view = buildNewspaperView(edition, new Map([["photo-1", "blob:one"], ["photo-2", "blob:two"]]));

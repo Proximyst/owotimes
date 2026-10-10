@@ -7,13 +7,17 @@ localStorage, photos in IndexedDB. No data leaves the browser.
 ## Editing
 
 - **Stories:** each story has a headline, a width (single column or full width),
-  any number of paragraphs (with **bold** and *italic*), a label above the headline, and an optional photo with its own caption.
+  and any number of paragraphs (with **bold** and *italic*).
+- **Story settings:** the Story settings button opens a wide dialog with the label
+  above the headline, the byline, the photo caption, the width, and the photo.
+  Dice buttons next to the top left, top right, and tagline fields in Configure, and
+  next to the label, byline, and caption in Story settings, pick a different text from a pool.
 - **Drag and drop:** drag the ⋮⋮ handle on a story to reorder stories. Drag the
   handle on a paragraph to move it within a story, or onto another story. Drop on
   a paragraph to insert before it; drop on a story to append.
 - **Configure:** the Configure button above the preview opens settings for the
   publication name and date line, paper tone (preset swatches or any colour), masthead,
-  tagline, banner, footer, byline, paper size, column count, body text size,
+  tagline, banner, footer, paper size, column count, body text size,
   paper crumple (amount and method), and fonts.
   - **Paper size:** A3, A4, US Letter, Tabloid, or Custom. Custom shows width
     (100–600 mm) and height (100–900 mm) sliders.

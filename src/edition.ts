@@ -1,5 +1,6 @@
 import { DEFAULT_LAYOUT, normalizeLayout, type Layout } from "./layout.ts";
 import { isRecord } from "./guards.ts";
+import { BYLINE_IDEAS, CAPTION_IDEAS, KICKER_IDEAS, PRICE_IDEAS, TAGLINE_IDEAS, TOP_RIGHT_IDEAS, randomFrom } from "./pools.ts";
 
 export interface Paragraph {
   id: string;
@@ -15,8 +16,11 @@ export interface Story {
   imageKey: string | null;
   caption: string;
   kicker: string;
+  byline: string;
   span: StorySpan;
 }
+
+export type StoryChanges = Partial<Pick<Story, "headline" | "imageKey" | "span" | "caption" | "kicker" | "byline">>;
 
 export interface EditionText {
   topLeft: string;
@@ -24,7 +28,6 @@ export interface EditionText {
   tagline: string;
   banner: string;
   footer: string;
-  byline: string;
 }
 
 export interface Edition {
@@ -38,14 +41,27 @@ export interface Edition {
 
 const DEFAULT_COLOR = "#e9dfc8";
 
-const DEFAULT_TEXT: EditionText = {
-  topLeft: "PRICE 1 EMERALD",
-  topRight: "THE VILLAGE'S PREMIERE NEWSPAPER",
-  tagline: "THE TRUTHFUL CHRONICLE OF VILLAGE AFFAIRS",
-  banner: "Hot news from the village square, mined fresh daily",
-  footer: "Printed with a crafting table · Published by the villagers",
-  byline: "By the village librarian",
+const BANNER = "Hot news from the village square, mined fresh daily";
+const FOOTER = "Printed with a crafting table · Published by the villagers";
+
+// Used when a saved edition lacks a field. New editions roll their text instead.
+const FALLBACK_TEXT: EditionText = {
+  topLeft: PRICE_IDEAS[0],
+  topRight: TOP_RIGHT_IDEAS[0],
+  tagline: TAGLINE_IDEAS[0],
+  banner: BANNER,
+  footer: FOOTER,
 };
+
+function rolledText(): EditionText {
+  return {
+    topLeft: randomFrom(PRICE_IDEAS),
+    topRight: randomFrom(TOP_RIGHT_IDEAS),
+    tagline: randomFrom(TAGLINE_IDEAS),
+    banner: BANNER,
+    footer: FOOTER,
+  };
+}
 
 function makeId() {
   return globalThis.crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -55,12 +71,10 @@ function textOr(value: unknown, fallback: string): string {
   return typeof value === "string" ? value : fallback;
 }
 
-const DEFAULT_CAPTION = "Sketched by the village cartographer";
-const DEFAULT_KICKER = "FROM OUR VILLAGE CORRESPONDENTS";
 const LEAD_KICKER = "FRONT PAGE SCOOP";
 
 function blankStory(): Story {
-  return { id: makeId(), headline: "", paragraphs: [], imageKey: null, caption: DEFAULT_CAPTION, kicker: DEFAULT_KICKER, span: "column" };
+  return { id: makeId(), headline: "", paragraphs: [], imageKey: null, caption: randomFrom(CAPTION_IDEAS), kicker: randomFrom(KICKER_IDEAS), byline: randomFrom(BYLINE_IDEAS), span: "column" };
 }
 
 export function createDefaultEdition(): Edition {
@@ -68,7 +82,7 @@ export function createDefaultEdition(): Edition {
     name: "OwO Times",
     paperColor: DEFAULT_COLOR,
     date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
-    text: { ...DEFAULT_TEXT },
+    text: rolledText(),
     layout: { ...DEFAULT_LAYOUT },
     stories: [
       {
@@ -79,8 +93,9 @@ export function createDefaultEdition(): Edition {
           text: "A creeper was seen hissing near the wheat fields at dusk. Iron golems were dispatched at once, and the villagers report no damage beyond a few scorched carrots. The village librarian advises all readers to keep their torches lit.",
         }],
         imageKey: null,
-        caption: DEFAULT_CAPTION,
+        caption: randomFrom(CAPTION_IDEAS),
         kicker: LEAD_KICKER,
+        byline: randomFrom(BYLINE_IDEAS),
         span: "column",
       },
     ],
@@ -111,8 +126,9 @@ function normalizeStory(story: Record<string, unknown>): Story {
     headline: textOr(story.headline, ""),
     paragraphs: normalizeParagraphs(story),
     imageKey: typeof story.imageKey === "string" ? story.imageKey : null,
-    caption: textOr(story.caption, DEFAULT_CAPTION),
-    kicker: textOr(story.kicker, DEFAULT_KICKER),
+    caption: textOr(story.caption, CAPTION_IDEAS[0]),
+    kicker: textOr(story.kicker, KICKER_IDEAS[0]),
+    byline: textOr(story.byline, BYLINE_IDEAS[0]),
     span: story.span === "full" ? "full" : "column",
   };
 }
@@ -120,12 +136,11 @@ function normalizeStory(story: Record<string, unknown>): Story {
 function normalizeText(input: unknown): EditionText {
   const record = isRecord(input) ? input : {};
   return {
-    topLeft: textOr(record.topLeft, DEFAULT_TEXT.topLeft),
-    topRight: textOr(record.topRight, DEFAULT_TEXT.topRight),
-    tagline: textOr(record.tagline, DEFAULT_TEXT.tagline),
-    banner: textOr(record.banner, DEFAULT_TEXT.banner),
-    footer: textOr(record.footer, DEFAULT_TEXT.footer),
-    byline: textOr(record.byline, DEFAULT_TEXT.byline),
+    topLeft: textOr(record.topLeft, FALLBACK_TEXT.topLeft),
+    topRight: textOr(record.topRight, FALLBACK_TEXT.topRight),
+    tagline: textOr(record.tagline, FALLBACK_TEXT.tagline),
+    banner: textOr(record.banner, FALLBACK_TEXT.banner),
+    footer: textOr(record.footer, FALLBACK_TEXT.footer),
   };
 }
 
@@ -152,7 +167,7 @@ export function addStory(edition: Edition): { edition: Edition; story: Story } {
 export function updateStory(
   edition: Edition,
   id: string,
-  changes: Partial<Pick<Story, "headline" | "imageKey" | "span" | "caption" | "kicker">>,
+  changes: StoryChanges,
 ): Edition {
   return {
     ...edition,

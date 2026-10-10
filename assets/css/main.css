@@ -180,13 +180,13 @@ textarea:focus-visible {
   color: var(--accent);
 }
 
-.caption-row {
+.dice-row {
   display: flex;
   gap: 0.5rem;
   align-items: center;
 }
 
-.caption-row input {
+.dice-row input {
   flex: 1;
   min-width: 0;
 }
@@ -194,6 +194,20 @@ textarea:focus-visible {
 .dice-button {
   display: inline-flex;
   padding: 0.35rem;
+}
+
+.modal {
+  width: 55vw;
+  min-width: 40vw;
+  max-width: 60vw;
+  max-height: 90vh;
+  overflow: auto;
+}
+
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .status-message {

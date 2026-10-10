@@ -12,8 +12,9 @@ import {
   type PaperSize,
 } from "../src/layout.ts";
 import { CRUMPLE_METHODS, PAPER_COLOURS, type CrumpleMethod } from "../src/paper.ts";
+import { PRICE_IDEAS, TAGLINE_IDEAS, TOP_RIGHT_IDEAS, randomFrom } from "../src/pools.ts";
 
-defineProps<{ edition: Edition }>();
+const props = defineProps<{ edition: Edition }>();
 
 const emit = defineEmits<{
   publication: [changes: Partial<Pick<Edition, "name" | "paperColor" | "date">>];
@@ -27,14 +28,20 @@ const columnOptions = Array.from(
   (_, offset) => COLUMN_RANGE.min + offset,
 );
 
-const textFields: { key: keyof EditionText; label: string }[] = [
-  { key: "topLeft", label: "Top left" },
-  { key: "topRight", label: "Top right" },
-  { key: "tagline", label: "Tagline under masthead" },
+type TextField = { key: keyof EditionText; label: string; pool?: readonly string[] };
+
+const textFields: TextField[] = [
+  { key: "topLeft", label: "Top left", pool: PRICE_IDEAS },
+  { key: "topRight", label: "Top right", pool: TOP_RIGHT_IDEAS },
+  { key: "tagline", label: "Tagline under masthead", pool: TAGLINE_IDEAS },
   { key: "banner", label: "Banner line" },
   { key: "footer", label: "Footer" },
-  { key: "byline", label: "Byline" },
 ];
+
+function rollText(field: TextField) {
+  if (!field.pool) return;
+  emit("text", { [field.key]: randomFrom(field.pool, props.edition.text[field.key]) });
+}
 
 type FontField = "mastheadFont" | "headlineFont" | "bodyFont";
 
@@ -89,12 +96,19 @@ const fontFields: { key: FontField; label: string }[] = [
       <legend>Masthead, labels, and footer text</legend>
       <template v-for="field in textFields" :key="field.key">
         <label :for="`cfg-text-${field.key}`">{{ field.label }}</label>
-        <input
-          :id="`cfg-text-${field.key}`"
-          type="text"
-          :value="edition.text[field.key]"
-          @input="emit('text', { [field.key]: ($event.target as HTMLInputElement).value })"
-        >
+        <div class="dice-row">
+          <input
+            :id="`cfg-text-${field.key}`"
+            type="text"
+            :value="edition.text[field.key]"
+            @input="emit('text', { [field.key]: ($event.target as HTMLInputElement).value })"
+          >
+          <DiceButton
+            v-if="field.pool"
+            :label="`Random ${field.label.toLowerCase()}`"
+            @roll="rollText(field)"
+          />
+        </div>
       </template>
     </fieldset>
 
