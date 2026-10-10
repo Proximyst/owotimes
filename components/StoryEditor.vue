@@ -2,6 +2,8 @@
 import { ref } from "vue";
 import type { Story, StoryChanges } from "../src/edition.ts";
 import { useDragState } from "../composables/useDragState.ts";
+import { generateText } from "../src/ai.ts";
+import { useAiSettings } from "../composables/useAiSettings.ts";
 
 const props = defineProps<{
   story: Story;
@@ -24,6 +26,9 @@ const emit = defineEmits<{
 const drag = useDragState();
 const hoveredParagraphId = ref<string | null>(null);
 const settingsOpen = ref(false);
+const { ready: aiReady, settings: aiSettings } = useAiSettings();
+const aiParagraphId = ref<string | null>(null);
+const aiPrompt = ref("");
 
 function allowDrop(event: DragEvent) {
   if (drag.active.value) event.preventDefault();
@@ -38,6 +43,17 @@ function hoverParagraph(id: string, event: DragEvent) {
 function dropOn(beforeParagraphId: string | null) {
   hoveredParagraphId.value = null;
   emit("drop", { storyId: props.story.id, beforeParagraphId });
+}
+
+// The paragraph the AI modal is writing for. The prompt is the reader's own request.
+function paragraphTask() {
+  const current = props.story.paragraphs.find((paragraph) => paragraph.id === aiParagraphId.value)?.text ?? "";
+  return () => generateText(aiSettings, { field: "Story paragraph", current, context: props.context, prompt: aiPrompt.value });
+}
+
+function writeParagraph(text: string) {
+  if (aiParagraphId.value) emit("updateParagraph", aiParagraphId.value, text);
+  aiParagraphId.value = null;
 }
 </script>
 
@@ -91,7 +107,17 @@ function dropOn(beforeParagraphId: string | null) {
           :value="paragraph.text"
           @input="emit('updateParagraph', paragraph.id, ($event.target as HTMLTextAreaElement).value)"
         />
-        <button type="button" class="button-danger" @click="emit('removeParagraph', paragraph.id)">Remove</button>
+        <div class="paragraph-actions">
+          <button
+            v-if="aiReady"
+            type="button"
+            class="dice-button ai-button"
+            :title="`Write paragraph ${n + 1} with AI`"
+            :aria-label="`Write paragraph ${n + 1} with AI`"
+            @click="aiParagraphId = paragraph.id"
+          >AI</button>
+          <button type="button" class="button-danger" @click="emit('removeParagraph', paragraph.id)">Remove</button>
+        </div>
       </div>
     </div>
 
@@ -112,6 +138,11 @@ function dropOn(beforeParagraphId: string | null) {
         @photo="emit('photo', $event)"
         @clear-photo="emit('clearPhoto')"
       />
+    </Modal>
+    <Modal v-if="aiParagraphId" title="Write paragraph with AI" @close="aiParagraphId = null">
+      <label for="ai-paragraph-prompt">What should this paragraph say?</label>
+      <textarea id="ai-paragraph-prompt" v-model="aiPrompt" rows="4" />
+      <AiButton label="Write paragraph" :task="paragraphTask()" @result="writeParagraph" />
     </Modal>
   </fieldset>
 </template>

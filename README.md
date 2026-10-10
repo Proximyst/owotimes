@@ -20,6 +20,7 @@ localStorage, photos in IndexedDB. No data leaves the browser.
   endpoint, model, key, temperature, and extra instructions, with buttons that fill in OpenAI, OpenRouter, or Anthropic presets. Once AI is switched on and a model and key are set, an AI button appears next to each text field in Configure and beside each story's label, byline, and caption. Each request sends all of the newspaper's text as context. The settings
   are stored only in this browser, and the page calls the endpoint directly, so the endpoint
   must allow browser (CORS) requests. The key is visible to anyone using this browser.
+  Each paragraph also has an AI button that opens a dialog for your prompt and replaces that paragraph with the result.
 - **Drag and drop:** drag the ⋮⋮ handle on a story to reorder stories. Drag the
   handle on a paragraph to move it within a story, or onto another story. Drop on
   a paragraph to insert before it; drop on a story to append.

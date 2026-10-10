@@ -138,9 +138,11 @@ body {
   grid-area: text;
 }
 
-.paragraph-row button {
+.paragraph-row .paragraph-actions {
   grid-area: remove;
   justify-self: start;
+  display: flex;
+  gap: 0.25rem;
 }
 
 .paragraph-row.is-drop-target {
@@ -199,7 +201,11 @@ textarea:focus-visible {
 
 .dice-button {
   display: inline-flex;
-  padding: 0.35rem;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
 }
 
 .modal {

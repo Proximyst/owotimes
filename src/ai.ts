@@ -82,6 +82,8 @@ export interface AiTextRequest {
   current: string;
   // What the newspaper or story is about.
   context: string;
+  // What the reader asked for, when they typed a prompt.
+  prompt?: string;
 }
 
 export function buildAiMessages(settings: AiSettings, request: AiTextRequest): ChatCompletionMessageParam[] {
@@ -93,6 +95,7 @@ export function buildAiMessages(settings: AiSettings, request: AiTextRequest): C
   const user = [
     `Field: ${request.field}`,
     request.context.trim() ? `Context:\n${request.context.trim()}` : "",
+    request.prompt?.trim() ? `Request: ${request.prompt.trim()}` : "",
     request.current ? `Current text (write something different): ${request.current}` : "",
   ].filter(Boolean).join("\n\n");
   return [

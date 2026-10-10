@@ -49,6 +49,13 @@ describe("AI settings", () => {
     expect(text).toContain("Keep it rural");
   });
 
+  test("passes the reader's own prompt into the request", () => {
+    const messages = buildAiMessages(READY, { field: "Story paragraph", current: "", context: "", prompt: "Write about the harvest" });
+    const text = messages.map((message) => message.content).join("\n");
+
+    expect(text).toContain("Request: Write about the harvest");
+  });
+
   test("persists settings and reads them back through injected storage", () => {
     const backing = new Map<string, string>();
     const storage = {
